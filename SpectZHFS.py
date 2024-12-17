@@ -317,9 +317,9 @@ def make_Jmj(J_am):
 # =============================================================================
     ###
     if type(J_am)==int or type(J_am)==float:
-        Jtmp = [[J_am,x] for x in np.linspace(-J_am,J_am, int(2*J_am+1))]
+        Jtmp = [[float(J_am),float(x)] for x in np.linspace(-J_am,J_am, int(2*J_am+1))]
     else:
-        Jtmp = [[jvs,x] for jvs in J_am for x in np.linspace(-jvs,jvs, int(2*jvs+1))]        
+        Jtmp = [[float(jvs),float(x)] for jvs in J_am for x in np.linspace(-jvs,jvs, int(2*jvs+1))]        
     return Jtmp
 
 def lo_sk(xrange, peak, pixel_size=0.002222):
@@ -437,11 +437,11 @@ def stateprocess(L_state,S_state,E_level,thisB):
     '''
     
     #Create an array that contains [L,ml,S,ms] for the given L,S values. Starts with lowest ml,mS values and itereates through ms first.
-    LS0 = [[L_state, x, S_state, y] for x in np.linspace(L_state, -L_state, int(2*L_state+1)) for y in np.linspace(S_state, -S_state, int(2*S_state+1)) ]
-  
+    LS0 = [[float(L_state), float(x), float(S_state), float(y)] for x in np.linspace(L_state, -L_state, int(2*L_state+1),dtype=float) for y in np.linspace(S_state, -S_state, int(2*S_state+1),dtype=float) ]
+    # LS0 = [[L_state, x, S_state, y] for x in np.linspace(L_state, -L_state, int(2*L_state+1),dtype=float) for y in np.linspace(S_state, -S_state, int(2*S_state+1),dtype=float) ]
     
     #Now create the possible J values
-    Jvals = np.arange(np.abs(L_state-S_state), (L_state+S_state+.1))
+    Jvals = np.arange(np.abs(L_state-S_state), (L_state+S_state+.1))#,dtype=float)
 
     #Use those J values to make all possible mJ values
     Jmjs0 = make_Jmj(Jvals)
@@ -471,7 +471,9 @@ def stateprocess(L_state,S_state,E_level,thisB):
     sortedstates = [x[-1] for x in sortedlist]
     E_cm = [x[1] for x in sortedlist] #This is the sorted energies, and is in cm^-1
     Jmjs = [x[2] for x in sortedlist]
+    # print(Jmjs)
     LS = [x[3] for x in sortedlist]
+    # print(LS)
     E_SO_cm_Mat = np.diagflat([item for item in E_cm]) #Despite the name, these energies are actually in cm-1
     
     
@@ -484,9 +486,11 @@ def stateprocess(L_state,S_state,E_level,thisB):
     for i in range(dim):
         for j in range(dim):
             #This uses the Metcalf 4.30 for relation between CG and w3j
-            w3mat[j,i] = ((-1)**(-LS[i][0] + LS[i][2] - Jmjs[j][1]))*np.sqrt(2*Jmjs[j][0] +1)*w3j(LS[i][0],LS[i][2], Jmjs[j][0], LS[i][1], LS[i][3], -Jmjs[j][1] )
-    
-    
+            w3mat[j,i] = ((-1)**(-LS[i][0] + LS[i][2] - Jmjs[j][1]))*np.sqrt(2*Jmjs[j][0] +1)*float(w3j(LS[i][0],LS[i][2], Jmjs[j][0], LS[i][1], LS[i][3], -Jmjs[j][1] ))
+            # w3mat[j,i] = ((-1)**(-LS[i][0] + LS[i][2] - Jmjs[j][1]))*np.sqrt(2*Jmjs[j][0] +1)*w3j(float(LS[i][0]),float(LS[i][2]), float(Jmjs[j][0]), float(LS[i][1]), float(LS[i][3]), float(-Jmjs[j][1] ))
+
+            # w3mat[j,i] = CGw3(LS[i][0],LS[i][2],Jmjs[j][0],LS[i][1],LS[i][3],-Jmjs[j][1])
+ 
     return [w3mat, Jmjs, LS,E_low, E_cm,E_SO_cm_Mat,sortedstates]
 
 
@@ -502,7 +506,7 @@ def ZeemanhighHFS(state_in,Ahfs,g_I, Bmag):
 
 def CGw3(j1,m1,j2,m2,j3,m3):
     #Clebsh Gordon Coeff using wigner3j
-        return ((-1)**(-j1 + j2 - m3))*np.sqrt(2*j3 +1)*float(w3j(j1,j2,j3,m1,m2,-m3))
+        return ((-1)**(-j1 + j2 - m3))*np.sqrt(2*j3 +1)*float(w3j(float(j1),float(j2),float(j3),float(m1),float(m2),-float(m3)))
 
 
 def stateprocess_HFS(L_state,S_state,I_state, HFS_Const,g_I,E_level,thisB):
@@ -510,7 +514,8 @@ def stateprocess_HFS(L_state,S_state,I_state, HFS_Const,g_I,E_level,thisB):
     #Create an array that contains [L,ml,S,ms] for the given L,S values. Starts with lowest ml,mS values and itereates through ms first.
     # LS0 = [[L_state, x, S_state, y] for x in np.linspace(-L_state, L_state, int(2*L_state+1)) for y in np.linspace(-S_state, S_state, int(2*S_state+1)) ]
     #Create an array that contains [L,ml,S,ms,I,mI] for the given L,S,I values. Starts with Highest mL,mS values and itereates through mI first, then mS, then mL
-    LSI0 = [[L_state, x, S_state, y, I_state, z] for x in np.linspace(-L_state, L_state, int(2*L_state+1)) for y in np.linspace(-S_state, S_state, int(2*S_state+1))for z in np.linspace(I_state, -I_state, int(2*I_state+1)) ]
+    #Extra type-casting is required due to new numpy.float64 objects interaction with sympy wigner functions
+    LSI0 = [[float(L_state), float(x), float(S_state), float(y), float(I_state), float(z)] for x in np.linspace(-L_state, L_state, int(2*L_state+1)) for y in np.linspace(-S_state, S_state, int(2*S_state+1))for z in np.linspace(I_state, -I_state, int(2*I_state+1)) ]
     
     #Now create the V values, starting with the lowest J state first.
     
@@ -521,12 +526,12 @@ def stateprocess_HFS(L_state,S_state,I_state, HFS_Const,g_I,E_level,thisB):
     Jmjs0 = make_Jmj(Jvals)
     
     #Make a list of J,mJ,I,mI states
-    JI0 = [[x[0], x[1],I_state, y] for x in Jmjs0 for y in np.linspace(-I_state, I_state, int(2*I_state+1)) ]
+    JI0 = [[float(x[0]),float(x[1]),float(I_state), float(y)] for x in Jmjs0 for y in np.linspace(-I_state, I_state, int(2*I_state+1)) ]
     
     #Combine J and Is to make possible Fs
     Fvals = [np.arange(np.abs(-x + I_state), (x+ I_state+.1)) for x in Jvals]
     #Flatten the list to be one big list
-    Fvals = [item for row in Fvals for item in row]
+    Fvals = [float(item) for row in Fvals for item in row]
     #Make the possible mFs for all Fs
     Fmfs0 = make_Jmj(Fvals)
 
@@ -814,7 +819,7 @@ def Zeeman_func_HFS(Level_in,Binput,gI):
     
     
     #Combine the energy matrices
-    scaledMat = np.mat(Level_in[1] + Binput*H_Zeeman*(muBcm) )
+    scaledMat = np.asmatrix(Level_in[1] + Binput*H_Zeeman*(muBcm) )
     #Diagonalize and calculate eigenvalues and eigenvectors.
     eigZ,eigvecZ = np.linalg.eigh(scaledMat)#, driver = "evx")
     eigZ2 = eigZ
@@ -850,7 +855,7 @@ def Zeeman_func(Level_in,Binput):
     
 
     #Diagonalize and calculate the eigenvalues and eigenvectors
-    scaledMat = np.mat(Level_in[5] + Binput*H_Zeeman*(muBcm ))
+    scaledMat = np.asmatrix(Level_in[5] + Binput*H_Zeeman*(muBcm ))
     eigZ,eigvecZ = scp.linalg.eigh(scaledMat)#, driver = "evx") #Using driver="evx" seems to change some of the signs of the resulting matricies. In the 0-field case, the eigenvectors should all be +1 I believe.
 
 
@@ -882,7 +887,7 @@ def ZeemanStark_func(Level_in,StarkIn,Binput):
         # EZtemp = Binput[0]*H_Zeeman*(muB/hh)
         # Etot_temp = np.linalg.eigvalsh(Level[3] + Binput[0]*H_Zeeman*(muB/hh)  )
         #Uncomment in case of errors.
-    scaledMat = np.mat(Level_in[5] + StarkIn + Binput*H_Zeeman*(muBcm ))
+    scaledMat = np.asmatrix(Level_in[5] + StarkIn + Binput*H_Zeeman*(muBcm ))
     eigZ,eigvecZ = scp.linalg.eigh(scaledMat)#, driver = "evx")
 
 
