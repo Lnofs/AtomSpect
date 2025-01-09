@@ -26,6 +26,7 @@ g_L = 1 #Lande Orbital g-factor, assuming infinite mass, otherwise is g_L = 1 - 
 g_S = 2.002319 #Lande electron spin g-factor
 a_o = 5.29e-11 #Bohr radii in m
 mu_0 = 4*np.pi*1e-7 #freespace mag permeability
+eps0 = 8.85e-12 #freespace permittivity
 kboltz = 1.381e-23 #Boltzmann Constant
 m_prot = 1.667e-27 #Mass of proton in kg
 m_elec = 9.11e-31
@@ -436,14 +437,14 @@ def stateprocess(L_state,S_state,E_level,thisB):
     
     '''
     
-    #Create an array that contains [L,ml,S,ms] for the given L,S values. Starts with lowest ml,mS values and itereates through ms first.
+    #Create an array that contains [L,ml,S,ms] for the given L,S values. Starts with highest ml,mS values and itereates through ms first.
     LS0 = [[float(L_state), float(x), float(S_state), float(y)] for x in np.linspace(L_state, -L_state, int(2*L_state+1),dtype=float) for y in np.linspace(S_state, -S_state, int(2*S_state+1),dtype=float) ]
     # LS0 = [[L_state, x, S_state, y] for x in np.linspace(L_state, -L_state, int(2*L_state+1),dtype=float) for y in np.linspace(S_state, -S_state, int(2*S_state+1),dtype=float) ]
     
     #Now create the possible J values
     Jvals = np.arange(np.abs(L_state-S_state), (L_state+S_state+.1))#,dtype=float)
 
-    #Use those J values to make all possible mJ values
+    #Use those J values to make all possible mJ values and starts with Lowest J, and lowest mJ
     Jmjs0 = make_Jmj(Jvals)
     
     #Combine both lists together to be a single large [J,mJ,L,mL,S,mS] list. The dimensions should match for LS0 and Jmjs0.
@@ -466,7 +467,7 @@ def stateprocess(L_state,S_state,E_level,thisB):
             thisZeemanEnergy = Zeemanlow(thislandegJ,Jmjs0[i][1],thisB) + x # This is the low zeeman approximation total energy
         biglist.append([thisZeemanEnergy,x,Jmjs0[i],LS0[i],bigstatelist[i]])
     
-    sortedlist = sorted(biglist)
+    sortedlist = sorted(biglist) #Soted in ascending energy
     E_low = [x[0] for x in sortedlist]
     sortedstates = [x[-1] for x in sortedlist]
     E_cm = [x[1] for x in sortedlist] #This is the sorted energies, and is in cm^-1
@@ -490,8 +491,9 @@ def stateprocess(L_state,S_state,E_level,thisB):
             # w3mat[j,i] = ((-1)**(-LS[i][0] + LS[i][2] - Jmjs[j][1]))*np.sqrt(2*Jmjs[j][0] +1)*w3j(float(LS[i][0]),float(LS[i][2]), float(Jmjs[j][0]), float(LS[i][1]), float(LS[i][3]), float(-Jmjs[j][1] ))
 
             # w3mat[j,i] = CGw3(LS[i][0],LS[i][2],Jmjs[j][0],LS[i][1],LS[i][3],-Jmjs[j][1])
- 
+            
     return [w3mat, Jmjs, LS,E_low, E_cm,E_SO_cm_Mat,sortedstates]
+
 
 
 #%%
@@ -596,6 +598,9 @@ def stateprocess_HFS(L_state,S_state,I_state, HFS_Const,g_I,E_level,thisB):
             #This conditional ensures we don't allow nuclear spin to flip or change between states. states[5] is mI.   
             if states1[5]!=states2[5]:
                 CG2 = 0
+                # CG2 = CGw3(states2[6],states2[7],states2[8],states2[9],states1[2],states1[3])
+                # w3cg2[i,j] = CG2
+
             else:
                 CG2 = CGw3(states2[6],states2[7],states2[8],states2[9],states1[2],states1[3])
 
@@ -718,7 +723,6 @@ def dipolestr_HFS(LG,LE):
     #States are from bigsortedlist = [F,mF,J,mJ,I,mI,L,mL,S,mS]
                                     #[0,1 ,2,3 ,4,5 ,6,7 ,8,9 ]
                                     
-    #This first block is from dan steck and is a slightly different formulation for the relative strength, but seems equivalent.
     thisq = LE[1] - LG[1]
    
     
@@ -788,8 +792,9 @@ def Zeeman_func_HFS(Level_in,Binput,gI):
 
     Returns
     -------
-    list
-        DESCRIPTION.
+    list containing the eigenvalues and eigenvectores after matrix diagonalization
+        [eigZ,eigvecZ]
+        
 
     '''
     Ldim=len(Level_in[-1]) #Dimension of the atomic level: Length of the # of possible states.
@@ -822,9 +827,8 @@ def Zeeman_func_HFS(Level_in,Binput,gI):
     scaledMat = np.asmatrix(Level_in[1] + Binput*H_Zeeman*(muBcm) )
     #Diagonalize and calculate eigenvalues and eigenvectors.
     eigZ,eigvecZ = np.linalg.eigh(scaledMat)#, driver = "evx")
-    eigZ2 = eigZ
 
-    return [eigZ2,eigvecZ]
+    return [eigZ,eigvecZ]
 
     
 
@@ -839,7 +843,8 @@ def Zeeman_func(Level_in,Binput):
     PsiL = np.zeros_like(Psi)
     PsiS = np.zeros_like(Psi)
     
-    #Create diagonal elements for the m values for each qm.     
+    #Create diagonal elements for the m values for each qm. Doing this is forcing that <n|m> = delta_nm, so 1 if n=m, but 0 else.
+    #This should be the case as we start with an orthogonal basis and the transformation should remain orthogonal.
     tmLMat = np.diagflat([Level_in[2][x][1] for x in range(Ldim)])
     tmSMat = np.diagflat([Level_in[2][x][3] for x in range(Ldim)])
     
@@ -857,10 +862,13 @@ def Zeeman_func(Level_in,Binput):
     #Diagonalize and calculate the eigenvalues and eigenvectors
     scaledMat = np.asmatrix(Level_in[5] + Binput*H_Zeeman*(muBcm ))
     eigZ,eigvecZ = scp.linalg.eigh(scaledMat)#, driver = "evx") #Using driver="evx" seems to change some of the signs of the resulting matricies. In the 0-field case, the eigenvectors should all be +1 I believe.
-
+    # eigZ2,eigvecZ2 = np.linalg.eigh(scaledMat)#, driver = "evx") #Using driver="evx" seems to change some of the signs of the resulting matricies. In the 0-field case, the eigenvectors should all be +1 I believe.
 
     return [eigZ,eigvecZ]
+    # return [eigZ,eigvecZ,eigZ2,eigvecZ2]
 
+    # return [eigZ,eigvecZ,tmLMat,PsiL]
+#%%
 def ZeemanStark_func(Level_in,StarkIn,Binput):
     #This function adds the stark shift energies into the matrix for diagonalization. Currently the stark shift matrix calculation function is incorrect.
     # Level=[CGmat, Jmjs, LS, E_SO_Hz_Mat]
@@ -1060,12 +1068,13 @@ def Zeeman_Main(Inputdeck):
                      'Temp' : 300, #Temperature in K. Used for Gaussian convolution
                      'specstep' : 0.002222 , #stepsize of linefunction [nm]
                      'fxnwindow': 0.5 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
-                     'plottitle': 'Excample Title' , #Title for plotting (optional)                     
+                     'plottitle': 'Excample Title' , #Title for plotting (optional).                      
                      'plot_window' : [425,435], #Min and max for plot window range (nm), convolutions will only take place within this range
                      'HFS_G' : [505.5e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                      'HFS_E': [0, 496.2e6, 440.5e6] , #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                      'I_spin' : -0.5, #Optional: nuclear spin, I, including parity. Tabulated by Stone et al.
                      'mu_I' :  .11778476 , #Optional: Nuclear dipole moment as tabulated by Stone.              
+                     'Efield' : 10 , #Optiona, Electric field in V/m. Not working as of (01-01-2025)
                      }
 
     Returns
@@ -1266,16 +1275,11 @@ def make_stickbins(sticks_in,signals_in, windsize=.5):
     return data
 
 
-def DopplerFWHM(x0,Temp_in,amu):
-    #This is the one that is actually used, it's doppler in wavelength
-    return (1/x0)*np.sqrt(8*np.log(2))*np.sqrt(kboltz*Temp_in/(amu*m_prot))
 
 
-def Gaussian(x, x0, Temp_in, amu, Intensity=1):
-    #Gaussian in wavelength. Temperature is in units of K, not eV.
-    tdop = DopplerFWHM(x0,Temp_in,amu)
-    xx = c_light*(1/x-1/x0)/tdop
-    return np.exp(-np.log(2)*xx**2)
+def Gaussian(x,x0,Temp_in,amu):
+    Dfwhm = (1/x)*np.sqrt(kboltz*Temp_in/(amu*m_prot))
+    return (1/(np.sqrt(2*np.pi)*Dfwhm))*np.exp( -((c_light/x - c_light/x0)**2)/(2*Dfwhm**2) )
 
 
 def Convol_Sticks(x0,xwind,Temp_in, amu_in, stepsize_nm, function = "Skewed"):
@@ -1394,4 +1398,10 @@ def read_Spectra(filename, scalewave = 1,headercount = 1,keepheaders = False):
         return [specdata_out , headers]
     else:
         return specdata_out  
+
+
+# #%%
+# ex_stateproc = stateprocess(1, .5,np.array([10000,10001]), 2)
+# ex_zeem = Zeeman_func(ex_stateproc,2)
+
 
