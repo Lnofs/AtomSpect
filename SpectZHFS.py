@@ -1238,7 +1238,7 @@ def make_stickbins(sticks_in,signals_in, windsize=.5):
     
     while tmax!=max0: #While the temp upper end of the window is not the overall max, keep doing this
         
-        if tlen==1: #The idea is that the top will keep going up until the window only has one stick in it, then the bottom is brought up to be the first stick after this point.
+        if tlen==1 or tax==tmin: #The idea is that the top will keep going up until the window only has one stick in it, then the bottom is brought up to be the first stick after this point.
         #This window then goes again for the next bin.
             wavewind.append([tmin-windsize,tmax+windsize]) #append the previous bin that was found via the the else conditionals below.
             
