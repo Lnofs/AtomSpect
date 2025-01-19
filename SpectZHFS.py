@@ -323,10 +323,11 @@ def make_Jmj(J_am):
         Jtmp = [[float(jvs),float(x)] for jvs in J_am for x in np.linspace(-jvs,jvs, int(2*jvs+1))]        
     return Jtmp
 
-def lo_sk(xrange, peak, pixel_size=0.002222):
+def lo_sk(xrange, peak, pixel_size=0.002222 ,Skewness=[1,1]):
     # pixel_size=0.002222 #nm per pixel
-    l_w = 0.62*pixel_size
-    r_w = 0.99*pixel_size
+    #The Skewness is the left and right constants [left,right], and change the skewness of the lorrentzian. If both are 1, it is a normal lorrentzian. These values can be modified to fit the instrument profile.
+    l_w = Skewness[0]*pixel_size
+    r_w = Skewness[1]*pixel_size
     sl_func = (((l_w)**2 / (((xrange-peak)**2 + (l_w)**2))) *np.heaviside(peak-xrange,1) + ((r_w)**2 / (((xrange-peak)**2 + (r_w)**2))) *np.heaviside(xrange-peak,1))
     return sl_func
 
@@ -622,7 +623,7 @@ def Zeeman_signal(LevelG,LZG,LevelE,LZE,Bangle=90,gamma = 0,Filter=False):
     #Need to make a list of all possible combinations such that each upper state is repeated by the dim of the lower level, and a second list where the opposite is true.
     #ie, each lower level is repeated by the count of upper level states. This makes two lower x upper length arrays that will be useful for wigner calcs.
     bjlist = [[x,y] for y in LevelE[-1] for x in LevelG[-1]] #This list will be [[bigstatesG], [bigstatesE]]
-    
+
     
     #need to define the polarization effect from the filter.
     rad = np.zeros((len(bjlist)))
@@ -1065,6 +1066,7 @@ def Zeeman_Main(Inputdeck):
                      'Pol_angle': 0 , #Angle polarizing filter makes with max linear transmission
                      'amu' : 183 , #Weight in AMU
                      'Convfxn': 'Gaussian' , #Optional: 'Gaussian', 'Skewed'. Future work will allow custom functions or modifying the skewed lorrentzian
+                     'SkewedConsts' : [0.62,0.99] #Optional, [Left,Right] constant for the skewness of the lorrentzian function. Between 0 and 1. If both are 1, it is a normal lorrentzian.
                      'Temp' : 300, #Temperature in K. Used for Gaussian convolution
                      'specstep' : 0.002222 , #stepsize of linefunction [nm]
                      'fxnwindow': 0.5 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
@@ -1075,6 +1077,7 @@ def Zeeman_Main(Inputdeck):
                      'I_spin' : -0.5, #Optional: nuclear spin, I, including parity. Tabulated by Stone et al.
                      'mu_I' :  .11778476 , #Optional: Nuclear dipole moment as tabulated by Stone.              
                      'Efield' : 10 , #Optiona, Electric field in V/m. Not working as of (01-01-2025)
+                     
                      }
 
     Returns
@@ -1162,7 +1165,8 @@ def Zeeman_Main(Inputdeck):
             
             data['EigGround'] = Ground_Zeeman
             data['EigExcited'] =Excited_Zeeman
-
+        
+        data['bigstatelist'] = Z_sig[3]
         data['signal'] = Z_sig[0]
         data['wave_vac'] = Z_sig[6]
         data['wave_air'] = Z_sig[1]
@@ -1178,13 +1182,22 @@ def Zeeman_Main(Inputdeck):
     #This check is for Convfxn. There is currently Gaussian and skewed (which is a skewed lorrentzian based on an instrument function).
     #Would like to add the ability for the user to meodify the skewed function, add their own instrument function lineshape, and regular lorrentzian profile
     #Might re-think some of these conditionals for the possible inputs and how they are checked for. 
+    
+    
     if 'Convfxn' in Inputdeck:
         Convtype = Inputdeck['Convfxn']
         stepsize = Inputdeck['specstep']
-        convtemp = Inputdeck['Temp']
        
         if Inputdeck['Convfxn'] =='Gaussian':
             convtemp = Inputdeck['Temp']
+            SkewedConstants = [0.62,0.99]
+        if Inputdeck['Convfxn'] =='Skewed':
+            convtemp = 300
+
+            if 'SkewedConsts' in Inputdeck:
+                SkewedConstants =  Inputdeck['SkewedConsts']
+            else:
+                SkewedConstants = [0.62,0.99]
         if 'fxnwindow' in Inputdeck:            
             fxnwindow = Inputdeck['fxnwindow']
         else:
@@ -1195,7 +1208,8 @@ def Zeeman_Main(Inputdeck):
         #This is the default configuration using the skewed lorrentzian that the Epscore Spectrometer uses.
         Convtype = 'Skewed'
         convtemp = 300
-        
+        SkewedConstants = [0.62,0.99]
+
         if 'fxnwindow' in Inputdeck:            
             fxnwindow = Inputdeck['fxnwindow']
         else:
@@ -1206,15 +1220,18 @@ def Zeeman_Main(Inputdeck):
         else:
             stepsize = 0.002222 #This is the resolution of the spectrometer pixels in nm. For smooth curves, I typically make this size 1/10th that of the spectrometer.
         
-
-    ConvolvedSpect, redsticks = Convol_Spect(data['wave_air'], data['signal'], Inputdeck['plot_window'], Inputdeck['amu'], stepsize,Temperature_in = convtemp, functiontype = Convtype , wind_size=fxnwindow)    
+    ConvolvedSpect, redsticks, binwinds = Convol_Spect(data['wave_air'], data['signal'], 
+                                                       Inputdeck['plot_window'], Inputdeck['amu'], stepsize,
+                                                       Temperature_in = convtemp, functiontype = Convtype , 
+                                                       wind_size=fxnwindow, Skewness_consts=SkewedConstants)    
        
     data['SpecOut'] = ConvolvedSpect
     data['reduced_sticks'] = redsticks
+    data['bin_windows'] = binwinds
     return data
 
 
-def make_stickbins(sticks_in,signals_in, windsize=.5):
+def make_stickbins(sticks_in,signals_in, windsize=.1):
     #This function collects the signals into wavelength bins where a bin ends when the next signal stick is more than 1nm from the top of the bin.
     #
     # reduceme = np.array(signals_in)>0.01*np.max(signals_in)/len(signals_in) #This was an attempt to exclude anything too small, but it doesn't seem to always work right.
@@ -1237,8 +1254,7 @@ def make_stickbins(sticks_in,signals_in, windsize=.5):
     wavewind = []
     
     while tmax!=max0: #While the temp upper end of the window is not the overall max, keep doing this
-        
-        if tlen==1 or tax==tmin: #The idea is that the top will keep going up until the window only has one stick in it, then the bottom is brought up to be the first stick after this point.
+        if tlen==1: #The idea is that the top will keep going up until the window only has one stick in it, then the bottom is brought up to be the first stick after this point.
         #This window then goes again for the next bin.
             wavewind.append([tmin-windsize,tmax+windsize]) #append the previous bin that was found via the the else conditionals below.
             
@@ -1257,7 +1273,11 @@ def make_stickbins(sticks_in,signals_in, windsize=.5):
             tred3 = tred1 & tred2 #Combine both conditionals
             ttop = wavered[tred3] #ttop is now wavered[tmax<x<tmax+windsize]
             tmax = np.max(ttop)
-            tlen = len(ttop)
+            #Need a case to andle for there only being degenerate sticks in a given window. This dirty method should work.
+            if tmax==tmin:
+                tlen=1
+            else:
+                tlen = len(ttop)
     #Add the last bin.
     wavewind.append([tmin-windsize,tmax+windsize])
     wavebins = []
@@ -1275,14 +1295,12 @@ def make_stickbins(sticks_in,signals_in, windsize=.5):
     return data
 
 
-
-
 def Gaussian(x,x0,Temp_in,amu):
     Dfwhm = (1/x)*np.sqrt(kboltz*Temp_in/(amu*m_prot))
     return (1/(np.sqrt(2*np.pi)*Dfwhm))*np.exp( -((c_light/x - c_light/x0)**2)/(2*Dfwhm**2) )
 
 
-def Convol_Sticks(x0,xwind,Temp_in, amu_in, stepsize_nm, function = "Skewed"):
+def Convol_Sticks(x0,xwind,Temp_in, amu_in, stepsize_nm, function = "Skewed", Skew_consts=[1,1]):
     '''
     Assume that the inputs are all in units of nm.
     The difference in this function is that I'm assuming that this subroutine will be called after the sticks have already been limited to a larger window.
@@ -1299,7 +1317,14 @@ def Convol_Sticks(x0,xwind,Temp_in, amu_in, stepsize_nm, function = "Skewed"):
 
     if function=="Skewed":    
         #This one just does convolution over the entire range, should be fine because the range is fed by the binned stick windows.
-        tlorry = lo_sk(waveout,x0,pixel_size =stepsize_nm)
+        tlorry = lo_sk(waveout,x0,pixel_size =stepsize_nm,Skewness=Skew_consts)
+        tlorry[tlorry>1] =1 #Sometimes an odd range for the lorrentzian causes the central peak to be twice as high for a single point, this should correct for that.
+        specout = tlorry
+        
+    elif function=="Lorrentzian":
+        #This uses the skewed lorrentzian but sets to skewness such that the result is a normal lorrentzian function.
+        tlorry = lo_sk(waveout,x0,pixel_size =stepsize_nm,Skewness=[1,1])
+        tlorry[tlorry>1] =1 #Sometimes an odd range for the lorrentzian causes the central peak to be twice as high for a single point, this should correct for that.
         specout = tlorry
     elif function=="Gaussian":
         tlorry = Gaussian(1e-9*waveout,1e-9*x0,Temp_in,amu_in)
@@ -1307,7 +1332,7 @@ def Convol_Sticks(x0,xwind,Temp_in, amu_in, stepsize_nm, function = "Skewed"):
 
     return [waveout,np.array(specout)]
 
-def Convol_Spect(waves_in, signal_in, wave_wind, atomic_weight_amu, resolution_nm,Temperature_in=300, functiontype = "Skewed", wind_size =.05):
+def Convol_Spect(waves_in, signal_in, wave_wind, atomic_weight_amu, resolution_nm,Temperature_in=300, functiontype = "Skewed", wind_size =.1, Skewness_consts = [1,1]):
     
     #This block reduces the waves and signals to be only values that are greater than 0.01*max/numsticks
 
@@ -1323,7 +1348,8 @@ def Convol_Spect(waves_in, signal_in, wave_wind, atomic_weight_amu, resolution_n
     #This vastly speeds up the calculations as anytime this isn't true will just be padded with 0 signal
     #0.5nm is like 50 fwhm at 100000K or something.
     tbins = make_stickbins(twavered, tsigred, windsize = wind_size)
-       
+    
+    #We make the first element of the spectra be a 0 value so the plot looks a little nicer by extending the line to the given windowing edge.
     tempwavs = []
     tempsigs = []
     for sticks, sigs, winds in zip(tbins['binned_waves'], tbins['binned_signals'], tbins['bin_windows']):
@@ -1332,13 +1358,24 @@ def Convol_Spect(waves_in, signal_in, wave_wind, atomic_weight_amu, resolution_n
 
         tsig = np.zeros_like(twav)
         for wavs, sigvals in zip(sticks,sigs):
-            tspec = Convol_Sticks(wavs, [winds[0],winds[1]], Temperature_in, atomic_weight_amu,resolution_nm,function=functiontype)
+            tspec = Convol_Sticks(wavs, [winds[0],winds[1]], Temperature_in, atomic_weight_amu,resolution_nm,function=functiontype, Skew_consts=Skewness_consts)
             tsig = tsig + sigvals*tspec[1]
         tempwavs.extend(twav)
         tempsigs.extend(tsig)
+    
+    #We want the function to appear to plot over the plot window, which can be achieved by adding a 0 signal value for the min and max wavelengths fro the given window.
+    
+    # tempwavs.extend(np.max(wave_wind))
+    # tempsigs.extend(0)
+    tempwavs = np.insert(tempwavs,0,np.min(wave_wind))
+    tempwavs = np.append(tempwavs,np.max(wave_wind))
+
+    tempsigs = np.insert(tempsigs,0,0)
+    tempsigs = np.append(tempsigs,0)
+
     spectholder = [tempwavs,tempsigs]
     
-    return     spectholder, [twavered, tsigred]
+    return     spectholder, [twavered, tsigred] , tbins['bin_windows']
 
 
 
