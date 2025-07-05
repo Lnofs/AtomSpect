@@ -1,20 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Zeeman_Main
+SpectSplit
+A versatile utility that calculates both Zeeman split spectra as well as relative signal strength.
+
 @author: Leo Nofs
 """
 
-import numpy as np
-import scipy as scp
-import csv
-from matplotlib import pyplot as plt
-
-from sympy.physics.wigner import wigner_3j as w3j, wigner_6j as w6j
-# -*- coding: utf-8 -*-
-"""
-Zeeman_Main
-@author: Leo Nofs
-"""
 
 import numpy as np
 import scipy as scp
