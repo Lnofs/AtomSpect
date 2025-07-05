@@ -1,0 +1,2 @@
+High-Resolution - McPherson 209 - has 3-4pm resolution (in theory)
+Epscore - Prinston HRS 500 - has 0.04nm pixel res.
