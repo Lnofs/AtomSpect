@@ -79,12 +79,12 @@ for function in functions:
                                                    position=[i,k],NormalizeSig=True,makefig=True)
                 if k==2: #430 is a different spectrometer measurement, so this plots that in the third column
                     PlotFunction(SpecPred,plotvars,Shape=(len(B_mag),len(SpecPred['bin_windows'])) ,
-                              axsin = multax,plotwind=SpecPred['bin_windows'][k],
+                              axsin = multax[1],plotwind=SpecPred['bin_windows'][k],
                               SpectrumPlot =specdat2 ,
                               position=[i,k],NormalizeSig=True,makefig=False)            
                 else:    
                     PlotFunction(SpecPred,plotvars,Shape=(len(B_mag),len(SpecPred['bin_windows'])) ,
-                              axsin = multax,plotwind=SpecPred['bin_windows'][k],
+                              axsin = multax[1],plotwind=SpecPred['bin_windows'][k],
                               SpectrumPlot =specdat1 ,
                               position=[i,k],NormalizeSig=True,makefig=False)
     plt.suptitle(f'Testing W lines for required resolution with {function} convolution ')
