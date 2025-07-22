@@ -24,12 +24,13 @@ sys.path.append(pathfil)
 CIIISpec = np.load('CIII_2.24T.npy') #This is the spectrometer data
 
 savefigs = False
-doCombSpec = False
+doCombSpec = True
 dopolfilterplot=True
 
 #Convert the spectrometer data from vacuum to air wavelengths
 CIII_wav = [Vac_to_air(x) for x in CIIISpec[0]]
 Los_Angle = 68.6#Theta angle of LoS in degrees
+# Temperature = 1e-5#Temp in eV
 
 Temperature = 28.1#Temp in eV
 Polangle = 55.75
@@ -87,7 +88,7 @@ CIII_4649 = Zeeman_Main(InputdeckCIII_4649)
 
 CIII_4663 = Zeeman_Main(InputdeckCIII_4663)
     
-CIII_Plotvars = [['green', 3, '-.',r'Voigt + Instrum $\Delta\lambda = 0.035 nm$']  ,                   
+CIII_Plotvars = [['green', 3, '-.',f'{InputdeckCIII_4649['Convfxn']}' + r'Instrum $\Delta\lambda = 0.035 nm$']  ,                   
                  ['brown', 2.5, '--',InputdeckCIII_4663['plottitle']]]
 
 CIII_scalevars = [1,1]
@@ -216,19 +217,23 @@ if doCombSpec:
 
     Normcombsig = Normalize(Combspec[0][1])
 
-    plt.figure()
+    fig, axs = plt.subplots(1) 
+    PlotFunction(CIII_4649,CIII_Plotvars[0],plotwind = [464.5,465.5], SpectrumPlot =[CIII_wav, Normalize(CIIISpec[1])],plottitle=f"B = 2.24T, Temp = {Temperature}eV, Los = {Los_Angle} deg," r"$v_i$ = -2500 m/s, $\Delta \lambda_{instrum}$ = 0.035 nm" ,
+                 NormalizeSig=True, makefig=False, axsin=axs)
     plt.title( f'CIII  B=2.24T , LoS = {Los_Angle} 464nm line')
     plt.suptitle( r'$CIII: [1s^2]2p3s (^3P_J) -> [1s^2]2p3p (^3P_J)$ and $[1s^2]2s3s (^3S_1) -> [1s^2]2s3p (^3P_J)$')
-    PlotFunction(CIII_4649,CIII_Plotvars[0],plotwind = [464.5,465.5], SpectrumPlot =[CIII_wav, Normalize(CIIISpec[1])],plottitle=f"B = 2.24T, Temp = {Temperature}eV, Los = {Los_Angle} deg," r"$v_i$ = -2500 m/s, $\Delta \lambda_{instrum}$ = 0.035 nm" , NormalizeSig = True, NormalizeScale = CIII_scalevars  ,makefig=False)
-    
-    plt.plot(CIII_wav, Normalize(CIIISpec[1]), color='black', label='Spectrometer Data')
+
+    # plt.plot(CIII_wav, Normalize(CIIISpec[1]), color='black', label='Spectrometer Data')
     plt.plot(Combspec[0][0], Normcombsig, label='Combined CIII + OII lines')
+    plt.legend(loc='best')
     plt.twinx()
     plt.vlines(CIII_4663['wave_air'], np.zeros_like(CIII_4663['signal']),scalers[1]*CIII_4663['signal'],color='orange', label='CIII 4663, f=0.1')
 
     plt.vlines(OII_465['wave_air'], np.zeros_like(OII_465['signal']),scalers[2]*OII_465['signal'],color='maroon', label='OII, f=0.025 ')
     plt.vlines(OIII_465['wave_air'], np.zeros_like(OIII_465['signal']),scalers[3]*OIII_465['signal'],color='blue', label='OIII, f= 0.02')
     plt.vlines(CIII_4649['wave_air'], np.zeros_like(CIII_4649['signal']),CIII_4649['signal'],color='green', label='CIII 4649, f=1 ')
+
+    
 
     # plt.plot(CIII_Dfitwav, Dfitnorm, color='magenta', label='DoroFit')
     plt.legend(loc='best')
