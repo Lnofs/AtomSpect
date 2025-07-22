@@ -9,13 +9,12 @@ As of updating packages on Mar 31, 2025, this file no longer functions as expect
 """
 
 
-import csv, os, sys
+import  os, sys
 import numpy as np
 from matplotlib import pyplot as plt
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
-from SpectSplit  import Zeeman_Main, Normalize,PlotFunction,read_Spectra, plotZfan, Convol_Spect,PlotFunction,plotarray
-
+from SpectSplit  import Zeeman_Main, Normalize,PlotFunction,read_Spectra, plotZfan, Convol_Spect,PlotFunction
 pathfil = os.getcwd()
 filname = '/Examples/SpectPredict/'
 
@@ -40,14 +39,14 @@ specdat2 = [wav430,spec430]
 Bangle = 90
 Temps = [0.025,1,3]
 specsteps = [0.05,0.01,0.005,0.002]
-functions = ['Lorrentzian','Gaussian','GaussianInst']
+# functions = ['Lorrentzian','Gaussian','GaussianInst']
 B_mag = [0.6,1.,3]
 specres= 1
 
 savefig = False
 
 Temp_ev = 1
-function='Gaussian'
+functions=['Gaussian']
 specstep = 0.002222 
 for function in functions:
     for i,Bvals in enumerate(B_mag):
@@ -79,12 +78,12 @@ for function in functions:
                                                    position=[i,k],NormalizeSig=True,makefig=True)
                 if k==2: #430 is a different spectrometer measurement, so this plots that in the third column
                     PlotFunction(SpecPred,plotvars,Shape=(len(B_mag),len(SpecPred['bin_windows'])) ,
-                              axsin = multax[1],plotwind=SpecPred['bin_windows'][k],
+                              axsin = multax,plotwind=SpecPred['bin_windows'][k],
                               SpectrumPlot =specdat2 ,
                               position=[i,k],NormalizeSig=True,makefig=False)            
                 else:    
                     PlotFunction(SpecPred,plotvars,Shape=(len(B_mag),len(SpecPred['bin_windows'])) ,
-                              axsin = multax[1],plotwind=SpecPred['bin_windows'][k],
+                              axsin = multax,plotwind=SpecPred['bin_windows'][k],
                               SpectrumPlot =specdat1 ,
                               position=[i,k],NormalizeSig=True,makefig=False)
     plt.suptitle(f'Testing W lines for required resolution with {function} convolution ')
