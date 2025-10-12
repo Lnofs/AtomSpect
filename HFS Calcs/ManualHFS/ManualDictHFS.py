@@ -620,10 +620,10 @@ def GenCouple(A,B,C,D):
 C1 = GenCouple(3,2.5,.5,3)
 C2 = GenCouple(3,.5,2.5,3)
 
-print(C1, C1*W7SinA)
-print(C2, C2*W7SOutA)
+print(C1, C1*W7SinA['A'])
+print(C2, C2*W7SOutA['A'])
 
-A2 = (C1*W7SinA + C2*W7SOutA)
+A2 = (C1*W7SinA['A'] + C2*W7SOutA['A'])
 print(A2)
 # C2 = (1-C1)
 #%%

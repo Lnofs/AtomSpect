@@ -526,8 +526,4 @@ def Ahfs(Input,verbose = False, Input2 = {}):
 def GenCouple(A,B,C,D):
     #Couples (A(A+1) + B(B+1) - C(C+1)) /(2D(D+1)) since it is such a common calculation, esp for testing.
     return (A*(A+1) + B*(B+1) - C*(C+1)) /(2*D*(D+1))
-#%%TestingImport
-#Now setting up a massive iteration based on the input contents. This will allow for easy iteration of correction factors, coupling, etc.
-#The goal being to eventually plot the different results against the experimental values.
-#No need to make a function that converts them to dictionaries as csv.DictReader can do just that, so as long as the header row has the same keyword as the HFS calculator, we're good!
 

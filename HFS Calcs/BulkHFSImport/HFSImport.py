@@ -17,7 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.pat
 
 pathfil = os.getcwd()
 # filname = '\HFSInputs_Coupled.csv'
-filname = '\HFSInputs.csv'
+filname = '/HFSInputs.csv' #Linux file structure is the opposite slash in python
 
 fil = pathfil + filname
 #This function creates a dictionary of the input parameters. Which should be exactly what the calculation function needs!
@@ -31,22 +31,22 @@ Corrections = 'FHdelepsds'
 #dict_keys(['Atom', 'Label', 'AMU', 'n1', 'E1', 'Eionize', 's1', 'l1', 'j1', 'Z', 'Za', 'I', 'mu_I', 'Q(b)', 'A_Exp', 'B_Exp', 'CorrFlags', 'Coupling', 'n2', 'E2', 's2', 'l2', 'j2', 'S', 'L', 'J', 'A_Calc', 'B_Calc', '', 'Source', 'Notes'])
 for HFScalcs in HFSInputs:
         # HFScalcs['Coupling'] = HFSInputs['Coupling']
-        if 'Corrflags' not in HFScalcs:
-            HFScalcs['Corrflags'] = Corrections
+        if 'Corrflags'  in HFScalcs:
+            HFScalcs['Corrflags'] = HFScalcs['Corrflags'] + Corrections
         else:
-            HFScalcs['Corrflags'] = HFScalcs['Corrflags'] + 'Corrections'
+            HFScalcs['Corrflags'] = Corrections
 
         # HFScalcs['Corrflags'] = HFSInputs['Corrflags'] #Set the flag for the correction factor for fast comparison of multiple settings.
 
         # HFScalcs['Corrflags'] = Corrections #Set the flag for the correction factor for fast comparison of multiple settings.
         # HFScalcs['Coupling'] = Couple
-        HFScalcs['LongLable'] = f'{HFScalcs['Label']}, {HFScalcs['Corrflags']}'#, Coupling={cc}'
+        HFScalcs['LongLable'] = f'{HFScalcs['Label']}; {HFScalcs['Corrflags']}'#, Coupling={cc}'
         HFScalcs['A_Calc'] = Ahfs(HFScalcs)['A']
         HFScalcs['pererror'] = pererror(HFScalcs['A_Exp'],HFScalcs['A_Calc'])
 
 
 
-verboseresults = True
+verboseresults = False
 if verboseresults:
     for HFScalcs in HFSInputs:
         if HFScalcs['pererror']>20: #Print out all the cases of error being more than 30%.
@@ -59,7 +59,23 @@ if verboseresults:
     
             print('')
               
-              
+# def Write_HFSOut(filename):
+
+#dict_keys(['Atom', 'Label', 'AMU', 'n1', 'E1', 'Eionize', 's1', 'l1', 'j1', 'Z', 'Za', 'I', 'mu_I', 'Q(b)', 'A_Exp', 'B_Exp', 'CorrFlags', 'Coupling', 'n2', 'E2', 's2', 'l2', 'j2', 'S', 'L', 'J', 'A_Calc', 'B_Calc', '', 'Source', 'Notes'])
+
+with open('HFSOutput2.csv', mode='w', newline='') as readme:
+    fieldnames = HFSInputs[0].keys()
+    
+    writer = csv.DictWriter(readme, fieldnames = fieldnames)
+    writer.writeheader()
+    for things in HFSInputs:
+        try:
+            trow = {k: v for k, v in things.items()}
+            writer.writerow(trow)
+        except:
+            pass
+        
+    # return datraw             
               
 #%%PlotInputDirectly
               
@@ -105,7 +121,7 @@ Couple = ['None']
 spancorrflags = powerset(Corrflaglist)
 resultslist = []
 
-doinputspan=True
+doinputspan=False
 if doinputspan==True:
     
     minerror = []
