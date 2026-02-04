@@ -74,6 +74,7 @@ def lande_gi(I, u_I):
 
 def lande_gj2(J, L, S):
     # Lande gJ as derived in Griffiths and others. Comes from projection of angular momentum and averaging of L and S
+    #This has one less step of calculation than lande_gj function but should be equivalent.
     if J == 0:
         return 0
     else:
@@ -82,7 +83,7 @@ def lande_gj2(J, L, S):
 
 def lande_gj(J, L, S):
     # Lande gJ as derived in Griffiths and others. Comes from projection of angular momentum and averaging of L and S
-    if J == 0:
+    if J == 0: #There is no lande effect if J=0 due to a singularity (1/J)
         return 0
     else:
         return 1 + (J*(J+1) + S*(S+1) - L*(L+1))/(2*J*(J+1))
@@ -91,6 +92,7 @@ def lande_gj(J, L, S):
 def lande_gf(F, I, J, L, S, g_I):
     # Lande gF, comes from averaging I, L, and S similar to gJ.
     thisgj = lande_gj(J, L, S)
+    #There is no lande effect if F=0, due to a singularity (1/F)
     if F == 0:
         return 0
     else:
@@ -99,14 +101,20 @@ def lande_gf(F, I, J, L, S, g_I):
 
 
 def Delta_E_HFS(I, J, F, A, B):
-    # This simple function can only do A constants for the time being. A has units of Hz. Typically A constants are given as h*value [Hz]
+    #Calculate the shift in energy due to the hyperfine effect, where A and B are the hyperfine constants.
+    #These are in units of Hz typically. Output is in units of cm^-1
+    #hhev/(1.24e-4) is a conversion factor that takes the Hz and results in cm^-1
+    #See SteckRb for a good overview of hyperfine. Kopfermann is a very detailed source as well.
+    
     # First need to define a constant K that will be used in the calculations
-    # The conversion factors of hhev/1.24e-4 are to get the output in cm^-1
     K = F*(F+1) - I*(I+1) - J*(J+1)
+    #Calculate A_hfs
     E_Ahfs = 0.5*A*K * hhev/(1.24e-4)
+    #Check for the cases when the B_hfs contribution must be zero (I=0,1/2, J=0,1/2, or if B=0 )
     if I == np.abs(0.5) or J == 0.5 or I == 0 or J == 0 or B == 0:
         E_Bhfs = 0
     else:
+        #If none of those cases are true, calculate the shift from the quadropole term.
         E_Bhfs = B*((0.75*K*(K+1) - I*(I+1)*J*(J+1))/(2*I*(2*I - 1)*J*(2*J - 1)))*(hhev/1.24e-4)
     return E_Ahfs + E_Bhfs
 
@@ -155,8 +163,11 @@ def ev_to_cm(E_diff):
 
 def Vac_to_air(wavein):
     '''
-    Converts wavelength from vacuum to air
-
+    Converts wavelength from vacuum to air by using the index of refaction.
+    
+    The calculation is based on Morton2000, so is done for "dry" air and
+    1 atmosphere of presure, 14% C and 0.045%CO_2 by volume.
+    
     Parameters
     ----------
     wavein : TYPE
@@ -170,9 +181,12 @@ def Vac_to_air(wavein):
     '''
 
     # Using Morton2000
-    wavevac_angs = wavein*10
+    wavevac_angs = wavein*10 #Convert to angstrom to match the paper
+    #Define a common factor
     s = (1e4)/wavevac_angs
+    #Calculate n_air
     n_air = 1 + 8.34254e-5 + (2.406147e-2)/(130 - s**2) + (1.5998e-4)/(38.9 - s**2)
+    #Calculate the new wavelength based on the index of refraction
     wavelengths = wavein / n_air
 
     return wavelengths
@@ -180,13 +194,15 @@ def Vac_to_air(wavein):
 
 def air_to_vac(wavein):
     '''
-    Converts wavelength from vacuum to air
-
+    Converts wavelength from vacuum to air, doing the opposite of Vac_to_air
+    The calculation is based on Morton2000, so is done for "dry" air and
+    1 atmosphere of presure, 14% C and 0.045%CO_2 by volume.
+    
     Parameters
     ----------
     wavein : TYPE
         Wavelength in (assumed in nm)
-
+    
     Returns
     -------
     TYPE
@@ -195,9 +211,12 @@ def air_to_vac(wavein):
     '''
 
     # Using Morton2000
-    wavevac_angs = wavein*10
+    wavevac_angs = wavein*10 #Convert to angstrom to match the paper
+    #Define a common factor
     s = (1e4)/wavevac_angs
+    #Calculate n_air
     n_air = 1 + 8.34254e-5 + (2.406147e-2)/(130 - s**2) + (1.5998e-4)/(38.9 - s**2)
+    #Calculate the new wavelength based on the index of refraction
     wavelengths = wavein * n_air
 
     return wavelengths
@@ -206,38 +225,100 @@ def air_to_vac(wavein):
 
 
 def A_Ein(E_in, dipolesig):
-    # A_ab = (womega^3 * e*2)/(3pieps0hbar*c**3) * |<a|r|b>|^2
+    '''
+    Calculate the Einstein A coefficient using the dipole moment.
+    Bransden QM 
+    A_ab = (womega^3 * e*2)/(3\pi eps0hbar*c**3) * |<a|r|b>|^2
+
+    There is also the intensity expression from Bethe and Salpeter - 59.10
+    
+    I = (4 q^2 omega^4)/(3 c^3) |r|^2 - again pol and spacially averaged.
+    
+    Compare to 59.11 for Einstein A as
+    A = (4 q^2 omega^3)/(3 hbarc^3) |r|^2 - again pol and spacially averaged.
+    
+    These are in erg/sec units.
+    There is definitely interesting physics and math to discover in these relations
+    As well as why the expected expressions do not precisely yield the A coefficients.
+    What is the missing component, and what is my calulation from the dipolestr actually giving?
+    
+    
+    The e
+    Parameters
+    ----------
+    E_in : float
+        Energy in wavelength (nm) for the given line
+    dipolesig : float
+        Scalar of the dipole sig strength for the given transition.
+
+    Returns
+    -------
+    tAein : TYPE
+        DESCRIPTION.
+
+    '''
+ 
     # omega = (Ea-Eb)/hbar
-    tomega = nm_to_Hz(E_in)/(2*np.pi)
-    tAein = ((tomega**2 * q_charge**2)/(np.pi*eps0*hh*c_light**3)) * dipolesig  # Not exactly as given by Wiki, but works?
-    # tomega = nm_to_Hz(E_in)/(2*np.pi)
-    # tAein = ((tomega**2 * q_charge**2)/(np.pi*eps0*hbar*c_light**3)) * dipolesig/(2*np.pi) #Not exactly as given by Wiki, but works?
+    tomega = nm_to_Hz(E_in)/(2*np.pi) #Note also the lack of hbar here, just h.
+    #This expression looks close to eq 4.119 in Bransden Atoms (Pg190/182)
+    tAein = ((tomega**2 * q_charge**2)/(np.pi*eps0*hh*c_light**3)) * dipolesig  # Not exactly as given by papers, but works?
+   
     return tAein
 
 # %%Plot
 
 
 def plotarray(shape, figure_size=(10, 8),fontsize=18):
-    #Figuresize is (Width,Height) in inches.
-    fig = plt.figure(figsize=figure_size)  # ,layout="constrained")
-    plotmat = np.zeros(shape, dtype='O')
+    '''
+    This is a general function which makes a blank array of plots with shape (rows,col)
+    and returns the fig object and array of plots. This is used with PlotFunction to feed plot data
+    towards a streamlined plotting experience.
+    A generalized version of these functions would be ideal, but the scope here is for use
+    in this code.
+
+    Parameters
+    ----------
+    shape : tuple
+        Dimensions of the plot (Rows, Colums)
+    figure_size : tuple (Width, Height)
+        Plot size in inches for the resulting figure. The default is (10, 8).
+    fontsize : Int
+        Size for the font in the figure. The default is 18.
+
+    Returns
+    -------
+    fig : natplotlib figure object
+        callable and assignable figure object.
+    plotmat : array
+        Array of plots where individual axes can be indexed for plotting on.
+
+    '''
+    
+    fig = plt.figure(figsize=figure_size)  #Make the main figure
+    plotmat = np.zeros(shape, dtype='O') #Make an empty np array of datatype 'Object"
+    
+    #Set the font size
     font = {
             'weight' : 'normal',
             'size'   : fontsize}
-    
     plt.rc('font', **font)
 
+
+    #1. Go through the array and define the plots in the subfigure.
+    #Iterate through the range and set that the columns and rows have shared axes.
+    
     for rows in range(shape[0]):
         for cols in range(shape[1]):
+            #First row and column have unique instructions since they define what is shared.
             if rows == 0:
                 if cols == 0:
-                    # plotmat[rows,cols] = plt.subplot2grid(shape,(rows,cols))
                     plotmat[rows, cols] = plt.subplot2grid(shape, (rows, cols))
                 else:
                     plotmat[rows, cols] = plt.subplot2grid(shape, (rows, cols), sharey=plotmat[0, 0])
 
             else:
                 plotmat[rows, cols] = plt.subplot2grid(shape, (rows, cols), sharey=plotmat[0, 0], sharex=plotmat[0, cols])
+   
     # Get rid fo the labels and ticks that are covered up for x axis.
     for rows in range(shape[0]-1):
         for cols in range(shape[1]):
@@ -246,10 +327,14 @@ def plotarray(shape, figure_size=(10, 8),fontsize=18):
     for rows in range(shape[0]):
         for cols in range(1, shape[1]):
             plotmat[rows, cols].tick_params('y', labelleft=False)
+            
+    #Set the x and y labels for standard use case of AtomSpect.
     fig.supxlabel('Wavelength (nm)', weight='semibold')
     fig.supylabel('Intensity (arb)', weight='semibold')
+    #Adjust the spacing to be closer together
     plt.subplots_adjust(hspace=0, wspace=0)
 
+    #Return a figure and plotmatrix objects that can be called for other functions.
     return fig, plotmat
 
 
@@ -259,200 +344,309 @@ def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPl
                  ScaleSpectrometer=None,SpectrometerLabel = 'Spectrometer',SpectrometerMarker = 'd',SpectrometerColor = 'black' ,
                  SpectrometerLS = 'solid', legcols=None):
     '''
-    This plot function is robust and can handle any combination of: Zeeman_Main (dictionary) output object, spectrometer data, and will even do the calculations if fed a valid input dictionary.
-    There are issues currently with it mixing some combinations, and a decent rework should be done
-    Probably aim to put as much as possible into the Plotobject, which includes the input dictionary used in the Zeeman calc. So single point of modification.
-    Likely want to make a separate function which pre-processes the inputs and makes them of the expected format, that way coding for the plotting can be simplified significantly
-    Otherwise, find a way to use keywords to iterate over variables to also simplify.
-    Need to sort out the different dimensionality of the poltarray and axis stuff. Much of this function is just trying to handle that.
+    Many parameters or flags can be included in the input dictionary object as that will be passed into this function.
+    
+    Some additional and/or better checking could be implemented in the future.
+    
+    A refactoring of the logic to make it easier to read and work with should be done. As it currently stands,
+    the logic has been slowly built up and done so in a very rough way. 
+    
+    The primary checks are for features like the twin axes, some treatment for having a list of plot inputs,
+    and the stem plots for the polarization components.
+    
+    Work shifted towards development of the slider plot instead, but that is limited to single plot objects.
+    
+    
     Parameters
     ----------
-    Plotobject : TYPE
-        DESCRIPTION.
-    plot_vars : TYPE
-        DESCRIPTION.
-    plottitle : TYPE, optional
-        DESCRIPTION. The default is ''.
-    plotwind : TYPE, optional
-        DESCRIPTION. The default is [].
-    SpectrumPlot : TYPE, optional
-        DESCRIPTION. The default is [].
-    Shape : TYPE, optional
-        DESCRIPTION. The default is (1,1).
-    position : TYPE, optional
-        DESCRIPTION. The default is [0,0].
-    axsin : TYPE, optional
-        DESCRIPTION. The default is [].
-    NormalizeSig : TYPE, optional
-        DESCRIPTION. The default is False.
-    NormalizeScale : TYPE, optional
-        DESCRIPTION. The default is 1.
-    makefig : TYPE, optional
-        DESCRIPTION. The default is True.
-    figuresize : TYPE, optional
-        DESCRIPTION. The default is (14,8).
+    Plotobject : What is being plotted.
+        This can be [x,y] data or a Zeeman Object dictionary output. It used to handle lists of possible inputs
+        But I would suggest using the ability to define an existing axes or plotarray instead.
+    plot_vars : list [color,linethickness, linestyle, label (optional), markerstyle (optional)]
+        List of definable parameters for a given plot such as color, linestyle, label, line thickness, and marker style
+    plottitle : str, optional
+        String for the plot title
+    plotwind : list or array, optional
+        Sets the limits for upper and lower bound of the plot window. If not defined, will try to see if there is an 
+        PlotObject['input'] which is the input dictionary for the main code which is contained in the output of the main function.
+        This input can include the plot_window keyword.
+        Otherwise, defaults to either the limits of the spectrometer data or the full range of the spectra convolution
+    SpectrumPlot : Array, optional
+        This is an array of spectrometer data [wavelength(nm),intensity]. Does not need to be normalized, can be using ScaleSpectrometer flag.
+        This gets plotted in black, but can be changed.
+    Shape : list or tuple, optional
+        Shape of the plot array that is to be created if makefig=True is set. Ignored otherwise.
+    position : index (list or int), optional
+        Position in the plot array for the given object to be plotted. Useful for making one plot then adding many overplots
+    axsin : array of plot objects, optional
+        This is the plotmatrix as output from PlotArray or returned as an otput of PlotFunction
+        If this is fed into PlotFunction here, this is where the object will be plotted. position information is thus required.
+    NormalizeSig : BOOL, optional
+        Whether a pass is done on the data to normalize it (making the maximum height as 1).
+        Note that the sums of the signal strenghts are already normalized to equal 1. This just uniformly scales the plot outputs.
+        The default is False.
+    NormalizeScale : INT, optional
+        A given curve can be scaled so that the maximum height is different than 1.
+        Useful for relative intensities of multiple species to match the observed spectra. The default is 1.
+    makefig : BOOL, optional
+        Whether a figure object should be created. Need Shape unless 1x1 plot is desired. The default is True.
+        Set to FALSE 
+    fig_size : tuple (Width, Height)
+        Plot size in inches for the resulting figure. The default is (10, 8).
+    plotpol : BOOL, optional
+        Whether the polarization components are plotted as stems in addition to the spectra. The default is True.
+    plotlabel : STR, optional
+        Label for the plot. The default is ''.
+    plotnondip : BOOL, optional
+        Whether non-dipole transitions should be plotted as well (purple star stem plots)
+        Despite only being a dipole based code, non-dipole components appear in the He results. The default is False.
+    dotwin : BOOL, optional
+        Whether a twin axis is plotted with a separate scale for the sticks than the main plot. The default is False.
+    marker : INT, optional
+        Index of markerlist. These are ['o','8','D','s','P','^','v','X']. Can also be 
+    marker_count : INT, optional
+        How many points between each marker on the plot. Allows for easier reading of the plot. The default is None.
+    fontsize : TYPE, optional
+       Size of the font
+    ScaleSpectrometer : float, optional
+       If provided, scales the spectrometer height so that the maximum value is that as provided. Default would be 1.
+    SpectrometerLabel : STR, optional
+        Optional label for spectrometer data. The default is 'Spectrometer'.
+    SpectrometerMarker : STR, optional
+        Ability to change the spectrometer data marker. The default is 'd'.
+    SpectrometerColor : STR, optional
+        Color for spectrometer data. The default is 'black'.
+    SpectrometerLS : STR, optional
+        Spectrometer Linestyle. The default is 'solid'.
+    legcols : INT, optional
+        How many columns the legend will have.. The default is None.
 
     Returns
     -------
-    fig : TYPE
-        DESCRIPTION.
-    taxs : TYPE
-        DESCRIPTION.
+    The plot array of axes objects that can be called and indexed for adding plot objects.
+    After creation, this array can be fed in as axsin multiple times to keep adding data.
+    From an index axes, it is possible to get additional information with axes operators.
 
     '''
     # Plotobjects can [[[waves],[signals]] or a list of multiple plot objects. [[[wave1],[sig1]] ,[[wave2],[sig2]] ] etc
     # plot_vars are [color, linewidth, linestyle, label,marker(optional)]
-    # verymuch want to add the ability to make multiple plots in the same window using this function and indexing the shape of the multiplot.
 
     # First check if the plotobject is inhomogogenous, which is to be the case should the user mix LZeeman output objects and other spectra.
     # Clever trick. A single list will have np.shape(a) = (n,). So can try np.shape(a)[1], if that passes, it's a 2d array. Else it's 1d.
+    #This type of combined list of plotting things still likely works, but I would suggest against using it.
+    
+    #This large section is checking for different possible configurations, sometimes within the input dictionary as well.
+    #This sets some default values if there are no input values.
+    
+    #Check for spectrometer scale value, otherwise set to 1.
     if ScaleSpectrometer:
         spectrometer_scale = ScaleSpectrometer
     else:
         spectrometer_scale=1
         
+    #Check for fontsize, otherwise set to 18
     if fontsize:
         font_size = fontsize
     else:
         font_size = 18
+    
+    #Check for a markerlist index.
     if marker:
         markerlist = [marker]
     else:
+        #If there isn't one, try to make a list of the 5th element of the plotvars list, which will be a markerobject, if it exists.
+        #This makes a list of just that object to be use later.
         try:
             markerlist = [plot_vars[4]]
         except:
+            #If there isn't a 5th item in the plotvars list, use this default list of 8 markers.
             markerlist = ['o','8','D','s','P','^','v','X']
+    
+    #Check for marker_count, if it doesn't exist, set it to 20.
     if marker_count:
         markcount = marker_count
     else:
         markcount = 20 #How many points between marks
-    alphaval = 0.8 #Set the alpha for the plots
-    marker_size = 9
-    tPlotObj = []
+        
+    alphaval = 0.8 #Set the alpha for the plots as a default
+    marker_size = 9 #Set the marker_size as 9 as default
+    
+    tPlotObj = [] #Initialize an emtpy plotobject array that will be filled based on filtering.
+    
+    
+    #This whole section is attempting to allow PlotObject to be either:
+        #The output of Zeeman_func, which is a dictionary
+        #A list of [waves,signals]
+        #Or any amount of either in combination as a large list.
+        #This was originally used for plotting, but that was before the ability to feed plot objects into an existing plot array
+        
+    
+    #If an array of axes is being input, a new plot should not be generated.
+    if axsin:
+        makefig=False
+    
+    
     try:
         np.shape(Plotobject)  # Shape will fail for a mix of dictionary and arrays due to being inhomogenous. It shouldn't fail for normal [[waves],[signal]]
-        if type(Plotobject) == dict:
+        if type(Plotobject) == dict: #If it is a dictionary, assume it is the output of Zeeman_func, and pull out the Spectra
             tPlotObj.append(Plotobject['SpecOut'])
         else:
-            tPlotObj = Plotobject
+            tPlotObj = Plotobject #Otherwise, just make the temp object the input, as it is a single [wave,signals]
+    #If this above check fails, it is because the input is a list of entries, so do the same but go through all entries.
     except:
-        for i, x in enumerate(Plotobject):  # If it fails, go through all elements as only multiple element inputs should be able to fail
+        for i, x in enumerate(Plotobject):  
             if type(x) == dict:
                 tPlotObj.append(x['SpecOut'])  # If it's a dict, try to remove the SpecOut keyword from LZeeman output object.
             else:
                 tPlotObj.append(x)  # Otherwise, just append the array.
             # The result here is an array of pairwise datas, but they might be of different lengths.
+    
+    #This checks if there was 'plot_window' defined in the input dictionary, and sets the plottingwind, the limits of the plot
+    #output, to match. Otherwise set plottingwind to default of None
     try:
         if 'plot_window' in Plotobject['Input'] and not plotwind:
             plotwind = Plotobject['Input']['plot_window']
             plottingwind = Plotobject['Input']['plot_window']
         else:
             plottingwind=plotwind
-    except:
+    
+    #If it can't do the above, such as if there is no plot_window in Plotobject['Input'], then set the plottingwindow to:
+        #Plotwind if it exists, or the min/max of the plotobject. At this point, tPlotObj will be just an array, take the first elements.
         
-  
+    except:       
         if plotwind:
             plottingwind = plotwind
         else:
             plottingwind = [np.min(tPlotObj[0][0]), np.max(tPlotObj[0][0])]
+            
+    #Check if there is SpectrumData, and set SpectrumPlot to that if it exists, otherwise do nothing.     
+    #This is done here because it requires the pre-sorting of the data types to work.
     try:
         if 'SpectrumData' in Plotobject['Input']:
             SpectrumPlot = Plotobject['Input']['SpectrumData']
 
     except:
         pass
+        
+    #After the above sorting stage, try to take the shape of tPlotObj again.
+    #If it fails, the spectra are different lengths, so we can go ahead with plotting them.
+    
     try:
         np.shape(tPlotObj)
 
     except:
-        print('DiffLength') 
-        # If the np.shape fails a second time, then it means the spectra are just of different lengths. This is fine, so we just iterate through them and plot
+        
+        #Make the figure if flagged to do so
         if makefig == True:
             tfig, taxs = plotarray(Shape, figure_size=fig_size,fontsize=font_size)
         else:
+            #If not flagged to do so, set taxs to axsin, so you must provide a plot array if you set makefig to False
             taxs = axsin
+            #Set tfig to None so taxs is only returned if the figure was made during this function call
+            tfig = None 
+                
+            #Set the color, linestyle, markers, etc for the Spectrometer data. Default is black solid line.
+        taxs[position[0], position[1]].plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
 
-            tfig = None
 
-            # Hardcode spectrum to be thickness 1 and black solid line.
-
-                    
-            try:
-                taxs[position[0], position[1]].plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
-            except:
-                taxs[position[0], position[1]].plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
-
+        #This goes through all of the different 
         for i, (tplotobj, plotvars) in enumerate(zip(tPlotObj, plot_vars)):
             if NormalizeSig == True:
-                if len(np.shape([NormalizeScale])) == 1:  # Condition checks if the user input a single value for the NormalizeScale or a list. If it's a list, then iterate over the entries to scale as requested.
+                #If NoramlizeSig is set True, check if NormalizeScale was given as a single value or a list of values.
+                #If it is a single value, all items are scaled to that. If it is a list, each is scaled by the corresponding amount.
+                if len(np.shape([NormalizeScale])) == 1:  
                     taxs[position[0], position[1]].plot(tplotobj[0], NormalizeScale(tplotobj[1], scaling=NormalizeScale), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
                                                         ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-               
+                #Iterate through the list of scaling values for each plot object.
                 else:
                     taxs[position[0], position[1]].plot(tplotobj[0], NormalizeScale(tplotobj[1], scaling=NormalizeScale[i]), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
                                                         ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-
+            
+            #If NormalizeSig is False, just plot the spectra as given with the provided plotvars values.
             else:
                 taxs[position[0], position[1]].plot(tplotobj[0], tplotobj[1], color=plotvars[0], linestyle=plotvars[2], linewidth=float(plotvars[1]), label=plotvars[3], alpha=alphaval
                                                     ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
 
+        
+        #Set the xlim based on plot window and ylim for a normalized curve.
         plt.xlim(np.min(plottingwind), np.max(plottingwind))
         plt.ylim(-.1, 1.1)
-
+        #Set the axis labels
         plt.xlabel('Wavelength (nm)', weight='semibold')
         plt.ylabel('Normalized Intensity (arb)', weight='semibold')
-        plt.title(plottitle)
-        # plt.legend(loc='best')
-        plt.tight_layout()
-        # plt.tight_layout(rect=[0, 0, 0.75, 1])
+        plt.title(plottitle) #Set the title
+        
+        plt.tight_layout() #Tight Layout
+        # plt.tight_layout(rect=[0, 0, 0.75, 1]) #This can be adjusted manually later.
         tfig.subplots_adjust(hspace=0, wspace=0)
 
-        plt.show()
-
+        plt.show() #Show the plot to bring it to top
+        
+        #If makefig was True, then tfig will be not None, and return taxs - the array of plots.
         if tfig:
             return taxs
-
+    
+    #At this point, the second np.shape was successful, and all arrays processed as expected.
+    
+    #Check for makefig and make the figure if True
     if makefig == True:
         tfig, taxs = plotarray(Shape, figure_size=fig_size,fontsize=font_size)
     else:
-        # markerlist = ['8','D','s','P','^','v','X']
-
-        taxs = axsin
+        taxs = axsin #If not makefig, need a plot axis (or axis array) to plot onto
+    
+    #Check if spectrometer data was provided and is not empty
     if SpectrumPlot != []:
-        # Hardcode spectrum to be thickness 1 and black solid line.
+        #First, try use the position information to try to plot the Spectrometer. This means an array of axes would have been passed, even a (1x1) array.
+        
         try:
             taxs[position[0], position[1]].plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
             taxs[position[0], position[1]].text(0.05, 0.95, f'{plotlabel}', verticalalignment='top',
                                                 horizontalalignment='left', transform=taxs[position[0], position[1]].transAxes)
+        
+        #If that fails, it is likely just a regular axes object, so plot the spectrometer data on that.
         except:
             taxs.plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
             taxs.text(0.05, 0.95, f'{plotlabel}', verticalalignment='top',
                       horizontalalignment='left', transform=taxs.transAxes)
 
-          # taxs.text(0.95,0.95,f'{plotlabel}' , verticalalignment='top',
-        #                                    horizontalalignment='left' )
+
     # This check allows the user to input multiple spectra objects or not.
-    # return tPlotObj, NormalizeScale
-    if len(np.shape(tPlotObj)) == 2:  # The first case is for a single spectra object or dictionary. A dictionary returns np.shape(dict) = (), which has a length of 0.
+    #If the length of the shape is 2, then it is a single spectra of [wave,signals]. If it is a dictionary, np.shape returns (), of length 0.    
+    
+    if len(np.shape(tPlotObj)) == 2:   #Check if 2d columns of data
+        
+        #
         if NormalizeSig == True:  # Check if Normalize Sig flag is True, if so then use the Normalize function to scale the results.
             taxs[position[0], position[1]].plot(tPlotObj[0], Normalize(tPlotObj[1], scaling=NormalizeScale), color=plot_vars[0], linestyle=plot_vars[2], linewidth=plot_vars[1], label=plot_vars[3], alpha=alphaval
                                                 ,marker=markerlist[0], markevery=markcount, markersize=marker_size)
         else:
+            #If Not normalizing the signal strength, first try to plot taxs[position[0],position[1]].
             try:
                 taxs[position[0], position[1]].plot(tPlotObj[0], tPlotObj[1], color=plot_vars[0], linestyle=plot_vars[2], linewidth=plot_vars[1], label=plot_vars[3], alpha=alphaval
                                                     ,marker=markerlist[0], markevery=markcount, markersize=marker_size)
+            #If that fails, then default to trying to plot to position [0][0]. This handles some dimensionality things.
             except:
                 taxs[0][0].plot(tPlotObj[0], tPlotObj[1], color=plot_vars[0], linestyle=plot_vars[2], linewidth=plot_vars[1], label=plot_vars[3], alpha=alphaval
                           ,marker=markerlist[0], markevery=markcount, markersize=marker_size)
 
+    #If np.shape is not 2, then it is a dictionary or multiple lists so it is nonhomogenous.
+    
     else:
+        #Go through each plotobjec and var and try to get ['SpecOut'], which is the spectrum from Zeeman_func output.
         for i, (plotobj, plotvars) in enumerate(zip(tPlotObj, plot_vars)):
             try:
                 t_plotobj = plotobj['SpecOut']
             except:
+                #If you cant, just set the temp object to be itself.
                 t_plotobj = plotobj
+                
+            #Check if a list of plotvar lists has been provided.
             if len(np.shape(plot_vars)) == 1:
                 plotvars = plot_vars
+                
+            #This is to handle the different container topologies that have been encountered.
+            #All this block does is use a decision tree for what format taxs is. This can handle
+            #an individual plot, a 1x1 plot, a single row/column plot array, or a 2d plot array.
             if NormalizeSig == True:
                 try:
                     try:
@@ -478,28 +672,38 @@ def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPl
                     taxs.plot(t_plotobj[0], t_plotobj[1], color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
                                                         ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
 
+
+
     # Trying to set the limits for the axis, based on different possible shapes. Need a better way to cycle through this.
+    #There are repeated checks based on the differences in plot array dimensions. 
+    
     try:
         
         taxs[position[0], position[1]].set_xlim(np.min(plottingwind), np.max(plottingwind))
         taxs[position[0], position[1]].set_ylim(-.1, 1.1)
-
+        
+        #Check if plotpol, dotwin, and plotnondip flags are set and treat accoringly.
         if plotpol:
+            #If plotpol is set, check if a twin axes scaling should be set.
             if dotwin:
                 twinaxis = taxs[position[0], position[1]].twinx()
                 twinaxis.set_ylim(-.1*np.max(Plotobject['reduced_sticks'][1]), np.max(Plotobject['reduced_sticks'][1]))
-
+                #If twinaxis is not set, define it to be the base axis so that the following steps are the same.
             else:
                 twinaxis = taxs[position[0], position[1]]
-
+                
+            #Make stem plots for the linear (pi) and both circular polarized light.
             twinaxis.stem(Plotobject['pi_sticks'][0], Plotobject['pi_sticks'][1], linefmt='C0', basefmt=" ", label='$\pi$')
             twinaxis.stem(Plotobject['sigmaminus_sticks'][0], Plotobject['sigmaminus_sticks'][1], linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$')
             twinaxis.stem(Plotobject['sigmaplus_sticks'][0], Plotobject['sigmaplus_sticks'][1], linefmt='C3', markerfmt='x', basefmt=" ",  label=r'$\sigma^+$')
+            
+            #Check if plotnondip flag is set, and add it as a stem plot as well.
             if plotnondip:
                 nondipml, nondipsl, nondipbl = twinaxis.stem(Plotobject['other_sticks'][0], Plotobject['other_sticks'][1], linefmt='C4', markerfmt='*', basefmt=" ",  label=r'$\Delta m >1$' , )
                 plt.setp(nondipml, markersize = 10)
                 nondipml.set_markerfacecolor('none')
-
+    
+    #Go through the same process of setting limits and adding twin plots, stems, etc, but for a different plotarray topology.
     except:
 
         try:
@@ -561,6 +765,12 @@ def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPl
                         nondipml, nondipsl, nondipbl = twinaxis.stem(Plotobject['other_sticks'][0], Plotobject['other_sticks'][1], linefmt='C4', markerfmt='*', basefmt=" ",  label=r'$\Delta m >1$')
                         plt.setp(nondipml, markersize = 10)
                         nondipml.set_markerfacecolor('none')
+                        
+    
+    
+    #This is to make the legend and have only unique entries shown (so if you have a 3x3 grid of plots, you don't get 9 legend entries for Spectrometer data)
+    
+    #Get the figure object from the axis, with a try/except tree based on the plotarray topology.
     try:
         tfig = taxs[0][0].get_figure()
     except:
@@ -568,13 +778,17 @@ def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPl
             tfig = taxs[0].get_figure()
         except:
             tfig = taxs.get_figure()
+    #Set a blank legend for the figure.
     tfig.legends = []
 
+    #This makes a list of the labels and handles for each plot in the array.
     try:
         handles,labels = [x[0].get_legend_handles_labels() for x in taxs]
         if not labels[0]:
+            #This breaks up the lists into two separate lists.
             handles = [x for x in handles[0]]
             labels = [x for x in handles[1]]
+    #Same thing for a different topology.
     except:
         try:
 
@@ -582,47 +796,56 @@ def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPl
         except:
             handles, labels = taxs.get_legend_handles_labels()
 
+
+    #If plotpol is flagged, need to add them to the legend as well. So we do that.
+    #This is why twinaxis is generated and separate, even if the flag is not set to process and add it.
+    
     if plotpol:
         handles2, labels2 = twinaxis.get_legend_handles_labels()
-        # unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-
-        # handles = handles + handles2
-        # labels = labels + labels2
-        handles.extend(handles2)
+        handles.extend(handles2) #Extend the handles and labels to include the polarization items.
         labels.extend(labels2)
 
+    #Sort out and only keep the unique entries in the list
     unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-        # axs.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.1f}")) This sets the formatting
 
-    # tfig.legend(*zip(*unique),bbox_to_anchor=(.955,.97), loc="upper right")
+    #The legend is placed outside the plot above it.
 
+    #Check for if legcols is set, which defines the number of columns in the legend.
     if legcols:
         plt.tight_layout(rect=[0, 0, 1, 0.95])
         tfig.legend(*zip(*unique), bbox_to_anchor=(.53, .95), loc='outside center', ncol=legcols, fontsize=18)
+    
+    #If plotnondip (which requires polarization plot), then default to 3 columns.
     elif plotnondip:
-
         tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .92), loc='outside center', ncol=3, fontsize=18)
         plt.tight_layout(rect=[0, 0, 1, 0.9])
+    
+    #If only plotpol, default to 5 cols (spectra,data,pi,sigma+,sigma-)
     elif plotpol:
         plt.tight_layout(rect=[0, 0, 1, 0.95])
         tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .95), loc='outside center', ncol=5, fontsize=18)
 
+    #If no polarization, two columns.
     else:
         plt.tight_layout(rect=[0, 0, 1, 0.95])
         tfig.legend(*zip(*unique), bbox_to_anchor=(.55, .95), loc='outside center', ncol=2, fontsize=18)
 
+    #Adjust the spacing between subplots again.
     plt.subplots_adjust(hspace=0, wspace=0)
 
-    # tfig.legend(*zip(*unique), bbox_to_anchor=(1.0, .5), loc="outside center right")
-    plt.show()
-    return taxs
-    # else:
-    #     return taxs
+    plt.show() #Show the figure and place it on top.
+    return taxs #Return the plot array object to be usable in other calls.
+
 # %%Plot_Slider
 # This section defines the plot_slider which creates interactve plots where parameters can be changed. This is a proof of concept, but is already looking very promising. Further UI work is needed.
 
 
 def Zslider(B, thisTemp, thisRes, Input):
+    '''
+    This function is used in the Slider iteration. It takes the input values and then feeds the value into Zeeman_Main
+    This is for the calculations each time the slider is changed.
+    Bmag, spectrometer resolution, and Temperature (eV) are all allowed to change.
+    '''
     Input['Bmag'] = B
     Input['specstep'] = thisRes
     Input['Temp'] = thisTemp*11602
@@ -631,6 +854,10 @@ def Zslider(B, thisTemp, thisRes, Input):
 
 
 def Zslider_Pol(B, thisTemp, thisRes, Bangle, PolAngle, Input):
+    '''
+    Due to the nature of the polarization complexity in the computation, this function is separate from the main slider.
+    This is used when polarization is included.
+    '''
     if not PolAngle:
         try:
             del Input['PolAngle']
@@ -667,7 +894,16 @@ def enable_manual_input(fig, slider):
     fig.canvas.mpl_connect("button_press_event", on_double_click)
 
 
+
 def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=True, banglevary=False, polvary=False, do_other = False):
+    '''
+    Generate the plot with changeable sliders that allow for real-time interaction with the spectral results.
+    All flags should be self-evident, with do_other referring to non-dipole transitions being shown.
+    
+    
+    
+    '''
+    
     # Initial params
     init_B = 2.5  # Initial B field (T)
     init_Temp = 0.05  # Initial temp (300K)
@@ -675,12 +911,15 @@ def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=Tru
     init_bang = 90  # Initially LoS is perpendicular to B
     init_polang = 90  # Initially block all circular light
 
+    #Make the blank figure and set parameters
     figs, axs = plt.subplots(figsize=(16, 10))
     plt.rcParams.update({'font.size': 14})
     figs.subplots_adjust(left=0.2, bottom=0.2, right=0.8)
 
+    #Plot the spectrometer data
     axs.plot(Spectra[0], Spectra[1], color="black", label="Spectrometer")
 
+    #Check for polvary
     if polvary and not banglevary:
         Mycalc0 = Zslider_Pol(init_B, init_Temp, init_Res, init_bang, init_polang, Inputdict)
     elif banglevary and not polvary:
@@ -1322,9 +1561,7 @@ def Zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False):
     # need to define the polarization effect from the filter.
     rad = []
     for i in range(len(bjlist)):
-        # tradL = polarization(bjlist[i][1][3],bjlist[i][0][3],Bangle,gamma,Pol_Filter=Filter) #Trying with polarization for L instead of J
-        # tradS = polarization(bjlist[i][1][5],bjlist[i][0][5],Bangle,gamma,Pol_Filter=Filter) #Testing polarization for S instead of J
-        # rad.append(tradL)
+
 
         rad.append(polarization(bjlist[i][1][1], bjlist[i][0][1], Bangle, gamma, Pol_Filter=Filter))
 
@@ -2006,8 +2243,7 @@ def ZeemanFan(Inputdeck, flags=''):
 
         output = {}
         if 'G' in flags:
-            # output['Glevel'] = Ground_Level
-            # output['GHZeem'] = Ground_Zeeman
+
             Ground_Level_HFS = stateprocess_HFS(L_ground, S_ground, I_spin, HFSConstsG, thisg_I, E_ground, 0)
             Ground_Zeeman_HFS = HZeeman_HFS(Ground_Level_HFS, thisg_I)
 
@@ -2022,7 +2258,6 @@ def ZeemanFan(Inputdeck, flags=''):
                     tmat = np.asmatrix(Ground_Zeeman_HFS['E0'] + G_HFS0 + Bvals*Ground_Zeeman_HFS['H_Z']*muBcm)
 
                 EigG.append(np.linalg.eigh(tmat)[0])
-            # output.append(np.array(EigG).T)
             output['G'] = np.array(EigG).T
 
             if 'L' in flags:
@@ -2066,22 +2301,17 @@ def ZeemanFan(Inputdeck, flags=''):
                 output['HighE'] = np.array(HighE).T
 
     else:
-        # print('NonHFS')
         output = {}
         if 'G' in flags:
-            # output['Glevel'] = Ground_Level
-            # output['GHZeem'] = Ground_Zeeman
             Ground_Level = stateprocess(L_ground, S_ground, E_ground, 0)
             Ground_Zeeman = HZeeman(Ground_Level)
 
             EigG = []
             for Bvals in Bfield_ext:
 
-                # tmat = np.asmatrix(Ground_Zeeman_HFS[0] +  Ground_Zeeman_HFS[2] +  Bvals*Ground_Zeeman_HFS[1]*muBcm)
                 tmat = np.asmatrix(Ground_Zeeman[0] + Bvals*Ground_Zeeman[1]*muBcm)
 
                 EigG.append(np.linalg.eigh(tmat)[0])
-            # output.append(np.array(EigG).T)
             output['G'] = np.array(EigG).T
 
             if 'L' in flags:
@@ -2220,11 +2450,10 @@ def plotZfan(Inputdeck, flags='', savefig=False, figname='placeholder',markercou
     plt.xlabel('Magnetic Field (T)', weight='semibold')
     plt.ylabel('Energy (cm^-1)', weight='semibold')
     plt.legend(loc='best')
-    # axs.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.3f}"))
     # plt.title(Inputdeck['plottitle'])
     plt.tight_layout()
-    # if savefig==True:
-    #     plt.savefig(f'{figname}_Excited.png',dpi=2000) #Save the figure if requested
+    if savefig==True:
+        plt.savefig(f'{figname}_Excited.png',dpi=2000) #Save the figure if requested
     return Zfantest
 
 
