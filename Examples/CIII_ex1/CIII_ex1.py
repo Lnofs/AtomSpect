@@ -24,10 +24,10 @@ sys.path.append(pathfil)
 # CIIISpec = np.load('CIII_2.21T_7.9ev.npy') #This is the spectrometer data
 
 savedpi = 144
-savefigs =1
+savefigs =0
 doHighTemp = 1
-doCombSpec = 0
-doConvComp = 10
+doCombSpec = 1
+doConvComp = 1
 doLowTemp =0
 do_title = 0
 do_sticks=1
@@ -101,7 +101,7 @@ if doHighTemp:
         
 
     
-    CIII_Plotvars = [['royalblue', 2, '--','Calculated' ,'D' ]    ]
+    CIII_Plotvars = [['royalblue', 2, '--','Gaussian+Instrum+Doppler' ,'D' ]    ]
     
     
     CIII_Plotvars.append(['crimson', 2, '--','Gaussian','o'])
@@ -111,7 +111,7 @@ if doHighTemp:
     #This plots my results and sticks, gaussian convolution, including the ion velocity.
 
     thixas = PlotFunction(CIII_4649,CIII_Plotvars[0],plotwind = [464.5,465.3],
-                 SpectrumPlot =[CIII_wav, Normalize(CIIISpec[1])],
+                 SpectrumPlot = np.array([CIII_wav, Normalize(CIIISpec[1])]),
               #   plottitle=r"CIII $[1s^2]2s3s (^3S_1) -> [1s^2]2s3p (^3P_J)$" f": B=2.24T , LoS = {Los_Angle}, T = {Temperature}, " ,
                  NormalizeSig = True,makefig=True ,fig_size=(10,8))
 
@@ -123,8 +123,8 @@ if doHighTemp:
             plt.savefig('CIII_4649B.pdf', dpi=savedpi, format='pdf')
 
     if do_sticks:
-        # plt.close('all')
-        thixas = PlotFunction([[0],[0]],CIII_Plotvars[0],plotwind = [464.5,465.3],
+
+        thixas = PlotFunction([[0,0],[0,0]],CIII_Plotvars[0],plotwind = [464.5,465.3],
                      SpectrumPlot =[CIII_wav, Normalize(CIIISpec[1])],
                      makefig=True ,plotpol = 0)
         thixas[0][0].vlines(CIII_4649['wave_air'],np.zeros_like(CIII_4649['wave_air']), CIII_4649['signal'])
@@ -217,12 +217,13 @@ if doHighTemp:
                           'amu' : 12.011 ,  #Weight in AMU
                           'specstep' : 0.02 , #Resolution of spectrometer in nm
                           'Convfxn': 'GaussianInstrum', #Optional: 'Gaussian', 'Skewed'.
-                          'Temp' : Temperature*11604, #Temperature in K. Used for Gaussian convolution
+                          'Temp' : 3.717*11604, #Temperature in K. Used for Gaussian convolution
                           'fxnwindow': 1 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
-                          'ion_vel' : -2500, #Ion velocity in m/s
+                          'ion_vel' : 2500, #Ion velocity in m/s
                           # 'Pol_angle': 90 ,#Angle polarizing filter makes with max linear transmission, Optional
     
                        }
+        InputdeckCII_CII
     
     
         OII_465 = Zeeman_Main(InputdeckOII)
@@ -235,15 +236,16 @@ if doHighTemp:
         #Trying a rough attempt at adding two different lines together before convolution (no padspec this time)
         
         # plt.close('all')
-    
+        #To have 28 eV CII, lets think about the required energy
         
         multispecs = [CIII_4649,CIII_4663,OII_465,OIII_465]
         #This allows for scaling of the differeint possible contributions.
         scalers = [1,.1,.02,0.02, 0]
+        temp_list = np.array([thisTemp,])*11602
         # scalers = [0,0,1,1]
         combspect = MultiSpec(multispecs,scalers)
         #Unfortunately, all included atoms will have the same temp, velocity, and mass currently.
-        Combspec = Convol_Spect(combspect[0],combspect[1], [462,470], 12.011, 0.035,Temperature_in=11602*thisTemp,
+        Combspec = Convol_Spect(combspect[0],combspect[1], [462,470], combspect[3], 0.035,Temperature_in=combspect[2],
                                   functiontype = "GaussianInstrum", wind_size = 1, ionvel=-2500)
         
     

@@ -72,7 +72,7 @@ if doHePol2 == True:
                           'Skewness': [0.62, 0.99],  # How non-symmetric the Lorrentzian is
                           'Pol_angle': angles,  # Angle polarizing filter makes with max linear transmission, Optional
                           'plottitle': 'He I 1s2p -> 1s4d: B=1.5T, Polarizing Filter',  # Title for plotting (optional)
-                          'spec_window': [447, 447.2],  # Min and max for convolutions
+                          'spec_window': [447.1, 447.2],  # Min and max for convolutions
                           'SpectrumData': [He_PolShift, He_Pol_Spec[i]],  # Spectrometer Data.
                           'plot_window': [447.1, 447.2],  # Min and max for plot window range (nm), convolutions will only take place within this range
                           'amu': 2,  # Weight in AMU
@@ -88,7 +88,7 @@ if doHePol2 == True:
                                 Shape=[1,len(polangles)], makefig=True,
                                 plotlabel=r'$\gamma$' + f'={angles}' + r'$^o$', plotnondip=True , fig_size = (19.5,9))
         else:
-            PlotFunction(HePol, HePol_PlotObj,  NormalizeSig=True, axsin=taxs[0][-1], position=[i, 0],
+            PlotFunction(HePol, HePol_PlotObj,  NormalizeSig=True, axsin=taxs, position=[0, i],
                          makefig=False,  plotlabel=r'$\gamma$' + f'={angles}' + r'$^o$', plotnondip=True, legcols=6)
 
     # if do_title:      
@@ -100,12 +100,7 @@ if doHePol2 == True:
             arrowprops=dict(facecolor='black', shrink=0.05),
             )
     
-    # plt.subplots_adjust(hspace=0, wspace=0)
-    # plt.tight_layout()
 
-    #     plt.suptitle(f'{InputdeckHePol['plottitle']}')
-    # savepdf = 1
-# 
     if savepdf:
 
         plt.savefig('He_Pol2.pdf', dpi=savedpi)

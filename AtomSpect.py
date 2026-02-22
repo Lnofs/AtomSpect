@@ -338,25 +338,105 @@ def plotarray(shape, figure_size=(10, 8),fontsize=18):
     return fig, plotmat
 
 
-def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPlot=[], Shape=[1, 1], position=[0, 0],
-                 axsin=[], NormalizeSig=False, NormalizeScale=1, makefig=True, fig_size=(10, 8), plotpol=True,
-                 plotlabel='', plotnondip=False, dotwin=False, marker = None,marker_count = None,fontsize=None,
-                 ScaleSpectrometer=None,SpectrometerLabel = 'Spectrometer',SpectrometerMarker = 'd',SpectrometerColor = 'black' ,
-                 SpectrometerLS = 'solid', legcols=None):
+
+def parse_plot_data(plot_object):
     '''
-    Many parameters or flags can be included in the input dictionary object as that will be passed into this function.
+    Standardizes input into a list of [wave, intensity] arrays.
+    This handles the Zeeman output dictionary, a single [wave,intensity] array,
+    or a list containing any combination of the two.
+    '''
+    # If it is a dictionary, assume it is the output of Zeeman_func, and pull out the Spectra [cite: 221]
+    if isinstance(plot_object, dict) and 'SpecOut' in plot_object:
+        return [plot_object['SpecOut']]
     
-    Some additional and/or better checking could be implemented in the future.
+    # If it's a single [wave, intensity] pair [cite: 221]
+    if isinstance(plot_object, (list, np.ndarray)) and len(np.shape(plot_object)) == 2:
+        return [plot_object]
+        
+    # If it's a mixed list of dictionaries and arrays [cite: 222, 223]
+    parsed_data = []
+    if isinstance(plot_object, list):
+        for item in plot_object:
+            if isinstance(item, dict) and 'SpecOut' in item:
+                parsed_data.append(item['SpecOut']) # Pull out SpecOut keyword from LZeeman object [cite: 222]
+            else:
+                parsed_data.append(item) # Otherwise, just append the array [cite: 223]
+    return parsed_data
+
+def get_target_axis(taxs, position):
+    '''
+    Safely extracts a single target axis regardless of taxs array dimensions.
+    '''
+    # If taxs is already a single axis object (e.g. from a manual slice), return it
+    if not isinstance(taxs, np.ndarray):
+        return taxs
     
-    A refactoring of the logic to make it easier to read and work with should be done. As it currently stands,
-    the logic has been slowly built up and done so in a very rough way. 
+    # Standardize position to [row, col]. 
+    # If only one index is provided, treat it as the column index.
+    row = position[0] if len(position) > 0 else 0
+    col = position[1] if len(position) > 1 else 0
     
-    The primary checks are for features like the twin axes, some treatment for having a list of plot inputs,
-    and the stem plots for the polarization components.
+    # Handle indexing based on the array dimensions returned by plotarray
+    # plotarray typically returns a 2D array even for a single row.
+    if taxs.ndim == 1:
+        return taxs[col]
+    else:
+        return taxs[row, col]
+
+def consolidate_legend(tfig, plotpol=True, plotnondip=False, legcols=None, fontsize=18):
+    '''
+    Gathers all handles and labels from EVERY axis in the figure (including twins)
+    and generates a single, unique legend at the top.
+    '''
+    tfig.legends = [] # Clear existing legends
+    all_handles = []
+    all_labels = []
+
+    # Iterate through all axes in the figure (twins are stored in tfig.axes as well)
+    for ax in tfig.axes:
+        h, l = ax.get_legend_handles_labels()
+        all_handles.extend(h)
+        all_labels.extend(l)
+
+    # Filter for unique labels to prevent 'Spectrometer' etc. from repeating
+    unique_map = {}
+    for handle, label in zip(all_handles, all_labels):
+        if label not in unique_map:
+            unique_map[label] = handle
+            
+    if not unique_map:
+        return tfig
+
+    labels = list(unique_map.keys())
+    handles = list(unique_map.values())
+
+    # Determine layout adjustment and column count
+    if legcols:
+        cols = legcols
+        rect_adj = [0, 0, 1, 0.95]
+    elif plotnondip:
+        cols = 3
+        rect_adj = [0, 0, 1, 0.9]
+    elif plotpol:
+        cols = 5
+        rect_adj = [0, 0, 1, 0.95]
+    else:
+        cols = 2
+        rect_adj = [0, 0, 1, 0.95]
+
+    plt.tight_layout(rect=rect_adj)
+    tfig.legend(handles, labels, bbox_to_anchor=(0.5, 0.95), 
+                loc='outside center', ncol=cols, fontsize=fontsize)
+    return tfig
+
+def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlot=[], Shape=[1, 1], 
+                 position=[0, 0], axsin=[], NormalizeSig=False, NormalizeScale=1, makefig=True, 
+                 fig_size=(10, 8), plotpol=True, plotlabel='', plotnondip=False, dotwin=False, 
+                 marker=None, marker_count=None, fontsize=None, ScaleSpectrometer=None, 
+                 SpectrometerLabel='Spectrometer', SpectrometerMarker='d', SpectrometerColor='black',
+                 SpectrometerLS='solid', legcols=None):
     
-    Work shifted towards development of the slider plot instead, but that is limited to single plot objects.
-    
-    
+    '''
     Parameters
     ----------
     Plotobject : What is being plotted.
@@ -376,7 +456,7 @@ def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPl
         This gets plotted in black, but can be changed.
     Shape : list or tuple, optional
         Shape of the plot array that is to be created if makefig=True is set. Ignored otherwise.
-    position : index (list or int), optional
+    position : index (list or int), optional [row,column]
         Position in the plot array for the given object to be plotted. Useful for making one plot then adding many overplots
     axsin : array of plot objects, optional
         This is the plotmatrix as output from PlotArray or returned as an otput of PlotFunction
@@ -420,422 +500,138 @@ def PlotFunction(Plotobject, plot_vars,  plottitle='', plotwind=None, SpectrumPl
         Spectrometer Linestyle. The default is 'solid'.
     legcols : INT, optional
         How many columns the legend will have.. The default is None.
-
+    
     Returns
     -------
     The plot array of axes objects that can be called and indexed for adding plot objects.
     After creation, this array can be fed in as axsin multiple times to keep adding data.
     From an index axes, it is possible to get additional information with axes operators.
 
+
     '''
-    # Plotobjects can [[[waves],[signals]] or a list of multiple plot objects. [[[wave1],[sig1]] ,[[wave2],[sig2]] ] etc
-    # plot_vars are [color, linewidth, linestyle, label,marker(optional)]
 
-    # First check if the plotobject is inhomogogenous, which is to be the case should the user mix LZeeman output objects and other spectra.
-    # Clever trick. A single list will have np.shape(a) = (n,). So can try np.shape(a)[1], if that passes, it's a 2d array. Else it's 1d.
-    #This type of combined list of plotting things still likely works, but I would suggest against using it.
     
-    #This large section is checking for different possible configurations, sometimes within the input dictionary as well.
-    #This sets some default values if there are no input values.
+    # --- 1. Initialization ---
+    font_size = fontsize if fontsize else 18
+    markcount = marker_count if marker_count else 20
+    spectrometer_scale = ScaleSpectrometer if ScaleSpectrometer else 1
     
-    #Check for spectrometer scale value, otherwise set to 1.
-    if ScaleSpectrometer:
-        spectrometer_scale = ScaleSpectrometer
+    if len(np.shape(plot_vars)) == 1:
+        working_vars = [plot_vars]
     else:
-        spectrometer_scale=1
-        
-    #Check for fontsize, otherwise set to 18
-    if fontsize:
-        font_size = fontsize
+        working_vars = plot_vars
+
+    resolved_markers = []
+    for v in working_vars:
+        if len(v) > 4: 
+            resolved_markers.append(v[4])
+        elif marker: 
+            resolved_markers.append(marker)
+        else: 
+            resolved_markers.append('o')
+
+    # --- 2. Figure and Axis Setup ---
+    if makefig:
+        tfig, taxs = plotarray(Shape, figure_size=fig_size, fontsize=font_size)
     else:
-        font_size = 18
+        taxs = axsin
     
-    #Check for a markerlist index.
-    if marker:
-        markerlist = [marker]
+    if not isinstance(taxs, np.ndarray):
+        target_axis = taxs
     else:
-        #If there isn't one, try to make a list of the 5th element of the plotvars list, which will be a markerobject, if it exists.
-        #This makes a list of just that object to be use later.
         try:
-            markerlist = [plot_vars[4]]
-        except:
-            #If there isn't a 5th item in the plotvars list, use this default list of 8 markers.
-            markerlist = ['o','8','D','s','P','^','v','X']
-    
-    #Check for marker_count, if it doesn't exist, set it to 20.
-    if marker_count:
-        markcount = marker_count
-    else:
-        markcount = 20 #How many points between marks
-        
-    alphaval = 0.8 #Set the alpha for the plots as a default
-    marker_size = 9 #Set the marker_size as 9 as default
-    
-    tPlotObj = [] #Initialize an emtpy plotobject array that will be filled based on filtering.
-    
-    
-    #This whole section is attempting to allow PlotObject to be either:
-        #The output of Zeeman_func, which is a dictionary
-        #A list of [waves,signals]
-        #Or any amount of either in combination as a large list.
-        #This was originally used for plotting, but that was before the ability to feed plot objects into an existing plot array
-        
-    
-    #If an array of axes is being input, a new plot should not be generated.
-    if axsin:
-        makefig=False
-    
-    
-    try:
-        np.shape(Plotobject)  # Shape will fail for a mix of dictionary and arrays due to being inhomogenous. It shouldn't fail for normal [[waves],[signal]]
-        if type(Plotobject) == dict: #If it is a dictionary, assume it is the output of Zeeman_func, and pull out the Spectra
-            tPlotObj.append(Plotobject['SpecOut'])
-        else:
-            tPlotObj = Plotobject #Otherwise, just make the temp object the input, as it is a single [wave,signals]
-    #If this above check fails, it is because the input is a list of entries, so do the same but go through all entries.
-    except:
-        for i, x in enumerate(Plotobject):  
-            if type(x) == dict:
-                tPlotObj.append(x['SpecOut'])  # If it's a dict, try to remove the SpecOut keyword from LZeeman output object.
-            else:
-                tPlotObj.append(x)  # Otherwise, just append the array.
-            # The result here is an array of pairwise datas, but they might be of different lengths.
-    
-    #This checks if there was 'plot_window' defined in the input dictionary, and sets the plottingwind, the limits of the plot
-    #output, to match. Otherwise set plottingwind to default of None
-    try:
-        if 'plot_window' in Plotobject['Input'] and not plotwind:
-            plotwind = Plotobject['Input']['plot_window']
-            plottingwind = Plotobject['Input']['plot_window']
-        else:
-            plottingwind=plotwind
-    
-    #If it can't do the above, such as if there is no plot_window in Plotobject['Input'], then set the plottingwindow to:
-        #Plotwind if it exists, or the min/max of the plotobject. At this point, tPlotObj will be just an array, take the first elements.
-        
-    except:       
-        if plotwind:
-            plottingwind = plotwind
-        else:
-            plottingwind = [np.min(tPlotObj[0][0]), np.max(tPlotObj[0][0])]
-            
-    #Check if there is SpectrumData, and set SpectrumPlot to that if it exists, otherwise do nothing.     
-    #This is done here because it requires the pre-sorting of the data types to work.
-    try:
-        if 'SpectrumData' in Plotobject['Input']:
-            SpectrumPlot = Plotobject['Input']['SpectrumData']
-
-    except:
-        pass
-        
-    #After the above sorting stage, try to take the shape of tPlotObj again.
-    #If it fails, the spectra are different lengths, so we can go ahead with plotting them.
-    
-    try:
-        np.shape(tPlotObj)
-
-    except:
-        
-        #Make the figure if flagged to do so
-        if makefig == True:
-            tfig, taxs = plotarray(Shape, figure_size=fig_size,fontsize=font_size)
-        else:
-            #If not flagged to do so, set taxs to axsin, so you must provide a plot array if you set makefig to False
-            taxs = axsin
-            #Set tfig to None so taxs is only returned if the figure was made during this function call
-            tfig = None 
-                
-            #Set the color, linestyle, markers, etc for the Spectrometer data. Default is black solid line.
-        taxs[position[0], position[1]].plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
-
-
-        #This goes through all of the different 
-        for i, (tplotobj, plotvars) in enumerate(zip(tPlotObj, plot_vars)):
-            if NormalizeSig == True:
-                #If NoramlizeSig is set True, check if NormalizeScale was given as a single value or a list of values.
-                #If it is a single value, all items are scaled to that. If it is a list, each is scaled by the corresponding amount.
-                if len(np.shape([NormalizeScale])) == 1:  
-                    taxs[position[0], position[1]].plot(tplotobj[0], NormalizeScale(tplotobj[1], scaling=NormalizeScale), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                        ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-                #Iterate through the list of scaling values for each plot object.
-                else:
-                    taxs[position[0], position[1]].plot(tplotobj[0], NormalizeScale(tplotobj[1], scaling=NormalizeScale[i]), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                        ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-            
-            #If NormalizeSig is False, just plot the spectra as given with the provided plotvars values.
-            else:
-                taxs[position[0], position[1]].plot(tplotobj[0], tplotobj[1], color=plotvars[0], linestyle=plotvars[2], linewidth=float(plotvars[1]), label=plotvars[3], alpha=alphaval
-                                                    ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-
-        
-        #Set the xlim based on plot window and ylim for a normalized curve.
-        plt.xlim(np.min(plottingwind), np.max(plottingwind))
-        plt.ylim(-.1, 1.1)
-        #Set the axis labels
-        plt.xlabel('Wavelength (nm)', weight='semibold')
-        plt.ylabel('Normalized Intensity (arb)', weight='semibold')
-        plt.title(plottitle) #Set the title
-        
-        plt.tight_layout() #Tight Layout
-        # plt.tight_layout(rect=[0, 0, 0.75, 1]) #This can be adjusted manually later.
-        tfig.subplots_adjust(hspace=0, wspace=0)
-
-        plt.show() #Show the plot to bring it to top
-        
-        #If makefig was True, then tfig will be not None, and return taxs - the array of plots.
-        if tfig:
-            return taxs
-    
-    #At this point, the second np.shape was successful, and all arrays processed as expected.
-    
-    #Check for makefig and make the figure if True
-    if makefig == True:
-        tfig, taxs = plotarray(Shape, figure_size=fig_size,fontsize=font_size)
-    else:
-        taxs = axsin #If not makefig, need a plot axis (or axis array) to plot onto
-    
-    #Check if spectrometer data was provided and is not empty
-    if SpectrumPlot != []:
-        #First, try use the position information to try to plot the Spectrometer. This means an array of axes would have been passed, even a (1x1) array.
-        
-        try:
-            taxs[position[0], position[1]].plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
-            taxs[position[0], position[1]].text(0.05, 0.95, f'{plotlabel}', verticalalignment='top',
-                                                horizontalalignment='left', transform=taxs[position[0], position[1]].transAxes)
-        
-        #If that fails, it is likely just a regular axes object, so plot the spectrometer data on that.
-        except:
-            taxs.plot(SpectrumPlot[0], Normalize(SpectrumPlot[1],scaling=spectrometer_scale), color=f'{SpectrometerColor}',marker=f'{SpectrometerMarker}', markevery=10, linewidth=1.5, label=f'{SpectrometerLabel}',linestyle = SpectrometerLS )
-            taxs.text(0.05, 0.95, f'{plotlabel}', verticalalignment='top',
-                      horizontalalignment='left', transform=taxs.transAxes)
-
-
-    # This check allows the user to input multiple spectra objects or not.
-    #If the length of the shape is 2, then it is a single spectra of [wave,signals]. If it is a dictionary, np.shape returns (), of length 0.    
-    
-    if len(np.shape(tPlotObj)) == 2:   #Check if 2d columns of data
-        
-        #
-        if NormalizeSig == True:  # Check if Normalize Sig flag is True, if so then use the Normalize function to scale the results.
-            taxs[position[0], position[1]].plot(tPlotObj[0], Normalize(tPlotObj[1], scaling=NormalizeScale), color=plot_vars[0], linestyle=plot_vars[2], linewidth=plot_vars[1], label=plot_vars[3], alpha=alphaval
-                                                ,marker=markerlist[0], markevery=markcount, markersize=marker_size)
-        else:
-            #If Not normalizing the signal strength, first try to plot taxs[position[0],position[1]].
+            target_axis = taxs[position[0], position[1]]
+        except (IndexError, TypeError):
             try:
-                taxs[position[0], position[1]].plot(tPlotObj[0], tPlotObj[1], color=plot_vars[0], linestyle=plot_vars[2], linewidth=plot_vars[1], label=plot_vars[3], alpha=alphaval
-                                                    ,marker=markerlist[0], markevery=markcount, markersize=marker_size)
-            #If that fails, then default to trying to plot to position [0][0]. This handles some dimensionality things.
-            except:
-                taxs[0][0].plot(tPlotObj[0], tPlotObj[1], color=plot_vars[0], linestyle=plot_vars[2], linewidth=plot_vars[1], label=plot_vars[3], alpha=alphaval
-                          ,marker=markerlist[0], markevery=markcount, markersize=marker_size)
-
-    #If np.shape is not 2, then it is a dictionary or multiple lists so it is nonhomogenous.
+                target_axis = taxs[position[0]]
+            except (IndexError, TypeError):
+                target_axis = taxs.flatten()[0]
     
+    tfig = target_axis.get_figure()
+
+    # --- 3. Data Extraction and Spectrometer Input Logic ---
+    tPlotObj = []
+    main_dict = None
+    
+    # Identify the primary dictionary for metadata and sticks
+    if isinstance(Plotobject, dict):
+        main_dict = Plotobject
+        tPlotObj.append(Plotobject.get('SpecOut', []))
     else:
-        #Go through each plotobjec and var and try to get ['SpecOut'], which is the spectrum from Zeeman_func output.
-        for i, (plotobj, plotvars) in enumerate(zip(tPlotObj, plot_vars)):
-            try:
-                t_plotobj = plotobj['SpecOut']
-            except:
-                #If you cant, just set the temp object to be itself.
-                t_plotobj = plotobj
-                
-            #Check if a list of plotvar lists has been provided.
-            if len(np.shape(plot_vars)) == 1:
-                plotvars = plot_vars
-                
-            #This is to handle the different container topologies that have been encountered.
-            #All this block does is use a decision tree for what format taxs is. This can handle
-            #an individual plot, a 1x1 plot, a single row/column plot array, or a 2d plot array.
-            if NormalizeSig == True:
-                try:
-                    try:
-                        taxs[position[0], position[1]].plot(t_plotobj[0], Normalize(t_plotobj[1], scaling=NormalizeScale[i]), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                            ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-                    except:
-                        taxs.plot(t_plotobj[0], Normalize(t_plotobj[1], scaling=NormalizeScale[i]), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                            ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-
-                except:
-                    try:
-                        taxs[position[0], position[1]].plot(t_plotobj[0], Normalize(t_plotobj[1], scaling=NormalizeScale), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                            ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-                    except:
-                        taxs.plot(t_plotobj[0], Normalize(t_plotobj[1], scaling=NormalizeScale), color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                            ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-
+        for x in Plotobject:
+            if isinstance(x, dict):
+                tPlotObj.append(x.get('SpecOut', []))
+                if main_dict is None: main_dict = x
             else:
-                try:
-                    taxs[position[0], position[1]].plot(t_plotobj[0], t_plotobj[1], color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                        ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
-                except:
-                    taxs.plot(t_plotobj[0], t_plotobj[1], color=plotvars[0], linestyle=plotvars[2], linewidth=plotvars[1], label=plotvars[3], alpha=alphaval
-                                                        ,marker=markerlist[i], markevery=markcount, markersize=marker_size)
+                tPlotObj.append(x)
 
+    # Resolve Spectrometer Data: Check direct input first, then the Plotobject dictionary
+    final_spec_data = SpectrumPlot
+    if len(final_spec_data) == 0 and main_dict is not None:
+        # Check for SpectrumData in the 'Input' sub-dictionary
+        if 'Input' in main_dict and 'SpectrumData' in main_dict['Input']:
+            final_spec_data = main_dict['Input']['SpectrumData']
 
+    # Plot Spectrometer data if found in either location
+    if len(final_spec_data) > 0:
+        target_axis.plot(final_spec_data[0], Normalize(final_spec_data[1], scaling=spectrometer_scale), 
+                         color=SpectrometerColor, marker=SpectrometerMarker, markevery=10, 
+                         linewidth=1.5, label=SpectrometerLabel, linestyle=SpectrometerLS)
 
-    # Trying to set the limits for the axis, based on different possible shapes. Need a better way to cycle through this.
-    #There are repeated checks based on the differences in plot array dimensions. 
-    
-    try:
-        
-        taxs[position[0], position[1]].set_xlim(np.min(plottingwind), np.max(plottingwind))
-        taxs[position[0], position[1]].set_ylim(-.1, 1.1)
-        
-        #Check if plotpol, dotwin, and plotnondip flags are set and treat accoringly.
-        if plotpol:
-            #If plotpol is set, check if a twin axes scaling should be set.
-            if dotwin:
-                twinaxis = taxs[position[0], position[1]].twinx()
-                twinaxis.set_ylim(-.1*np.max(Plotobject['reduced_sticks'][1]), np.max(Plotobject['reduced_sticks'][1]))
-                #If twinaxis is not set, define it to be the base axis so that the following steps are the same.
-            else:
-                twinaxis = taxs[position[0], position[1]]
-                
-            #Make stem plots for the linear (pi) and both circular polarized light.
-            twinaxis.stem(Plotobject['pi_sticks'][0], Plotobject['pi_sticks'][1], linefmt='C0', basefmt=" ", label='$\pi$')
-            twinaxis.stem(Plotobject['sigmaminus_sticks'][0], Plotobject['sigmaminus_sticks'][1], linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$')
-            twinaxis.stem(Plotobject['sigmaplus_sticks'][0], Plotobject['sigmaplus_sticks'][1], linefmt='C3', markerfmt='x', basefmt=" ",  label=r'$\sigma^+$')
+    # --- 4. Plotting Calculated Spectra ---
+    for i, (tplot_data, p_vars) in enumerate(zip(tPlotObj, working_vars)):
+        y_data = tplot_data[1]
+        if NormalizeSig:
+            scale_val = NormalizeScale[i] if isinstance(NormalizeScale, list) else NormalizeScale
+            y_data = Normalize(tplot_data[1], scaling=scale_val)
             
-            #Check if plotnondip flag is set, and add it as a stem plot as well.
-            if plotnondip:
-                nondipml, nondipsl, nondipbl = twinaxis.stem(Plotobject['other_sticks'][0], Plotobject['other_sticks'][1], linefmt='C4', markerfmt='*', basefmt=" ",  label=r'$\Delta m >1$' , )
-                plt.setp(nondipml, markersize = 10)
-                nondipml.set_markerfacecolor('none')
+        target_axis.plot(tplot_data[0], y_data, color=p_vars[0], linestyle=p_vars[2], 
+                         linewidth=p_vars[1], label=p_vars[3], alpha=0.8,
+                         marker=resolved_markers[i], markevery=markcount, markersize=9)
+
+    # --- 5. Styling and Limits ---
+    plottingwind = plotwind
+    if main_dict and 'Input' in main_dict and not plotwind:
+        plottingwind = main_dict['Input'].get('plot_window', None)
+
+    if plottingwind:
+        target_axis.set_xlim(np.min(plottingwind), np.max(plottingwind))
+    target_axis.set_ylim(-0.1, 1.1)
     
-    #Go through the same process of setting limits and adding twin plots, stems, etc, but for a different plotarray topology.
-    except:
+    if plottitle: 
+        target_axis.set_title(plottitle)
+    if plotlabel:
+        target_axis.text(0.05, 0.95, f'{plotlabel}', verticalalignment='top', 
+                         transform=target_axis.transAxes, fontsize=font_size-2)
 
-        try:
+    # --- 6. Polarization Stems ---
+    if plotpol and main_dict and 'pi_sticks' in main_dict:
+        stem_ax = target_axis.twinx() if dotwin else target_axis
+        
+        if dotwin and 'reduced_sticks' in main_dict:
+            stem_ax.set_ylim(-0.1 * np.max(main_dict['reduced_sticks'][1]), 
+                             np.max(main_dict['reduced_sticks'][1]))
+        
+        stem_ax.stem(main_dict['pi_sticks'][0], main_dict['pi_sticks'][1], 
+                     linefmt='C0', basefmt=" ", label='$\pi$')
+        stem_ax.stem(main_dict['sigmaminus_sticks'][0], main_dict['sigmaminus_sticks'][1], 
+                     linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$')
+        stem_ax.stem(main_dict['sigmaplus_sticks'][0], main_dict['sigmaplus_sticks'][1], 
+                     linefmt='C3', markerfmt='x', basefmt=" ", label=r'$\sigma^+$')
+        
+        if plotnondip and 'other_sticks' in main_dict:
+            m, _, _ = stem_ax.stem(main_dict['other_sticks'][0], main_dict['other_sticks'][1], 
+                                   linefmt='C4', markerfmt='*', basefmt=" ", label=r'$\Delta m >1$')
+            plt.setp(m, markersize=10, markerfacecolor='none')
 
-            taxs[position[0]].set_xlim(np.min(plottingwind), np.max(plottingwind))
-            taxs[position[0]].set_ylim(-.1, 1.1)
-            if plotpol:
-                if dotwin:
-                    twinaxis = taxs[position[0]].twinx()
-                    twinaxis.set_ylim(-.1*np.max(Plotobject['reduced_sticks'][1]), np.max(Plotobject['reduced_sticks'][1]))
-
-                else:
-                    twinaxis = taxs[position[0]]
-
-                twinaxis.stem(Plotobject['pi_sticks'][0], Plotobject['pi_sticks'][1], linefmt='C0', basefmt=" ", label='$\pi$   ')
-                twinaxis.stem(Plotobject['sigmaminus_sticks'][0], Plotobject['sigmaminus_sticks'][1], linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$ ')
-                twinaxis.stem(Plotobject['sigmaplus_sticks'][0], Plotobject['sigmaplus_sticks'][1], linefmt='C3', markerfmt='x', basefmt=" ",  label=r'$\sigma^+$ ')
-                if plotnondip:
-                    nondipml, nondipsl, nondipbl = twinaxis.stem(Plotobject['other_sticks'][0], Plotobject['other_sticks'][1], linefmt='C4', markerfmt='*', basefmt=" ",  label=r'$\Delta m >1$')
-                    plt.setp(nondipml, markersize = 10)
-                    nondipml.set_markerfacecolor('none')
-
-
-        except:
-            try:
-                taxs[position[0]][0].set_xlim(np.min(plottingwind), np.max(plottingwind))
-                taxs[position[0]][0].set_ylim(-.1, 1.1)
-                if plotpol:
-                    if dotwin:
-                        twinaxis = taxs[0][0].twinx()
-                        twinaxis.set_ylim(-.1*np.max(Plotobject['reduced_sticks'][1]), np.max(Plotobject['reduced_sticks'][1]))
-
-                    else:
-                        twinaxis = taxs[0][0]
-
-                    twinaxis.stem(Plotobject['pi_sticks'][0], Plotobject['pi_sticks'][1], linefmt='C0', basefmt=" ", label='$\pi$ ')
-                    twinaxis.stem(Plotobject['sigmaminus_sticks'][0], Plotobject['sigmaminus_sticks'][1], linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$ ')
-                    twinaxis.stem(Plotobject['sigmaplus_sticks'][0], Plotobject['sigmaplus_sticks'][1], linefmt='C3', markerfmt='x', basefmt=" ",  label=r'$\sigma^+$ ')
-                    if plotnondip:
-                        nondipml, nondipsl, nondipbl =  twinaxis.stem(Plotobject['other_sticks'][0], Plotobject['other_sticks'][1], linefmt='C4', markerfmt='*', basefmt=" ",  label=r'$\Delta m >1$')
-                        plt.setp(nondipml, markersize = 10)
-                        nondipml.set_markerfacecolor('none')
-
-            except:
-                taxs.set_xlim(np.min(plottingwind), np.max(plottingwind))
-                taxs.set_ylim(-.1, 1.1)
-                if plotpol:
-                    if dotwin:
-                        twinaxis = taxs.twinx()
-                        twinaxis.set_ylim(-.1*np.max(Plotobject['reduced_sticks'][1]), np.max(Plotobject['reduced_sticks'][1]))
-
-                    else:
-                        twinaxis = taxs
-
-                    twinaxis.stem(Plotobject['pi_sticks'][0], Plotobject['pi_sticks'][1], linefmt='C0', basefmt=" ", label='$\pi$ ')
-                    twinaxis.stem(Plotobject['sigmaminus_sticks'][0], Plotobject['sigmaminus_sticks'][1], linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$')
-                    twinaxis.stem(Plotobject['sigmaplus_sticks'][0], Plotobject['sigmaplus_sticks'][1], linefmt='C3', markerfmt='x', basefmt=" ",  label=r'$\sigma^+$')
-                    if plotnondip:
-                        nondipml, nondipsl, nondipbl = twinaxis.stem(Plotobject['other_sticks'][0], Plotobject['other_sticks'][1], linefmt='C4', markerfmt='*', basefmt=" ",  label=r'$\Delta m >1$')
-                        plt.setp(nondipml, markersize = 10)
-                        nondipml.set_markerfacecolor('none')
-                        
+    # --- 7. Legend and Final Layout ---
+    consolidate_legend(tfig, plotpol=plotpol, plotnondip=plotnondip, legcols=legcols, fontsize=font_size)
     
-    
-    #This is to make the legend and have only unique entries shown (so if you have a 3x3 grid of plots, you don't get 9 legend entries for Spectrometer data)
-    
-    #Get the figure object from the axis, with a try/except tree based on the plotarray topology.
-    try:
-        tfig = taxs[0][0].get_figure()
-    except:
-        try:
-            tfig = taxs[0].get_figure()
-        except:
-            tfig = taxs.get_figure()
-    #Set a blank legend for the figure.
-    tfig.legends = []
+    if makefig:
+        plt.subplots_adjust(hspace=0, wspace=0)
+        plt.show()
 
-    #This makes a list of the labels and handles for each plot in the array.
-    try:
-        handles,labels = [x[0].get_legend_handles_labels() for x in taxs]
-        if not labels[0]:
-            #This breaks up the lists into two separate lists.
-            handles = [x for x in handles[0]]
-            labels = [x for x in handles[1]]
-    #Same thing for a different topology.
-    except:
-        try:
-
-            handles, labels = taxs[0][0].get_legend_handles_labels()
-        except:
-            handles, labels = taxs.get_legend_handles_labels()
-
-
-    #If plotpol is flagged, need to add them to the legend as well. So we do that.
-    #This is why twinaxis is generated and separate, even if the flag is not set to process and add it.
-    
-    if plotpol:
-        handles2, labels2 = twinaxis.get_legend_handles_labels()
-        handles.extend(handles2) #Extend the handles and labels to include the polarization items.
-        labels.extend(labels2)
-
-    #Sort out and only keep the unique entries in the list
-    unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-
-    #The legend is placed outside the plot above it.
-
-    #Check for if legcols is set, which defines the number of columns in the legend.
-    if legcols:
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-        tfig.legend(*zip(*unique), bbox_to_anchor=(.53, .95), loc='outside center', ncol=legcols, fontsize=18)
-    
-    #If plotnondip (which requires polarization plot), then default to 3 columns.
-    elif plotnondip:
-        tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .92), loc='outside center', ncol=3, fontsize=18)
-        plt.tight_layout(rect=[0, 0, 1, 0.9])
-    
-    #If only plotpol, default to 5 cols (spectra,data,pi,sigma+,sigma-)
-    elif plotpol:
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-        tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .95), loc='outside center', ncol=5, fontsize=18)
-
-    #If no polarization, two columns.
-    else:
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-        tfig.legend(*zip(*unique), bbox_to_anchor=(.55, .95), loc='outside center', ncol=2, fontsize=18)
-
-    #Adjust the spacing between subplots again.
-    plt.subplots_adjust(hspace=0, wspace=0)
-
-    plt.show() #Show the figure and place it on top.
-    return taxs #Return the plot array object to be usable in other calls.
-
+    return taxs
 # %%Plot_Slider
 # This section defines the plot_slider which creates interactve plots where parameters can be changed. This is a proof of concept, but is already looking very promising. Further UI work is needed.
 
@@ -2543,11 +2339,16 @@ def Zeeman_Main(Inputdeck, **kwargs):
     else:
         Inputdeck['amu'] = 1  # Setting a default value so it's not required to be input.
 
-    if 'spec_window' in Inputdeck:
-        pass
-    else:
-        Inputdeck['spec_window'] = [1, 1000]  # Setting a default massive window
-        
+    # 1. Establish the "Spectrometer" fallback range
+    spec_data = Inputdeck.get('SpectrumData')
+    # If data exists, use its bounds; otherwise, use the global default
+    data_range = [np.min(spec_data[0]), np.max(spec_data[0])] if spec_data is not None else [1, 1000]
+    
+    # 2. Resolve windows: Dictionary Value > Spectrometer range > default
+    specwindow = Inputdeck.get('spec_window', data_range)
+    plotwindow = Inputdeck.get('plot_window', data_range)
+    
+    
     if 'EtermG' in Inputdeck:
         EtermG = Inputdeck['EtermG']
     else:
@@ -2736,9 +2537,10 @@ def Zeeman_Main(Inputdeck, **kwargs):
     else:
         specres = 10
     ConvolvedSpect, redsticks, binwinds = Convol_Spect(data['wave_air'], data['signal'],
-                                                       Inputdeck['spec_window'], Inputdeck['amu'], stepsize,
+                                                       specwindow, plotwindow, Inputdeck['amu'], stepsize,
                                                        Temperature_in=convtemp, functiontype=Convtype,
                                                        wind_size=fxnwindow, Skewness_consts=SkewedConstants, ionvel=ion_vel, specres=specres, bidir=bidirect)
+    
     data['SpecOut'] = ConvolvedSpect
     data['reduced_sticks'] = redsticks
     data['bin_windows'] = binwinds
@@ -2758,7 +2560,7 @@ def Zeeman_Main(Inputdeck, **kwargs):
 
     if 'DoLowSig' in Inputdeck:
         ConvolvedSpectLow, redsticksLow, binwindsLow = Convol_Spect(data['wave_air_low'], data['signal_low'],
-                                                                    Inputdeck['spec_window'], Inputdeck['amu'], stepsize,
+                                                                    specwindow, plotwindow,  Inputdeck['amu'], stepsize,
                                                                     Temperature_in=convtemp, functiontype=Convtype,
                                                                     wind_size=fxnwindow, Skewness_consts=SkewedConstants, ionvel=ion_vel, specres=specres, bidir=bidirect)
 
@@ -2768,7 +2570,7 @@ def Zeeman_Main(Inputdeck, **kwargs):
 
     if 'DoHighSig' in Inputdeck:
         ConvolvedSpectHigh, redsticksHigh, binwindsHigh = Convol_Spect(data['wave_air_high'], data['signal_high'],
-                                                                    Inputdeck['spec_window'], Inputdeck['amu'], stepsize,
+                                                                    specwindow, plotwindow,  Inputdeck['amu'], stepsize,
                                                                     Temperature_in=convtemp, functiontype=Convtype,
                                                                     wind_size=fxnwindow, Skewness_consts=SkewedConstants, ionvel=ion_vel, specres=specres, bidir=bidirect)
 
@@ -2779,93 +2581,29 @@ def Zeeman_Main(Inputdeck, **kwargs):
     return data
 
 # %%Convolution
-
-
-def make_stickbins(sticks_in, signals_in, windsize=.1):
-    # This function collects the signals into wavelength bins where a bin ends when the next signal stick is more than 1nm from the top of the bin.
-    #
-    # reduceme = np.array(signals_in)>0.01*np.max(signals_in)/len(signals_in) #This was an attempt to exclude anything too small, but it doesn't seem to always work right.
-    # sigred = np.array(signals_in)[reduceme]
-    # wavered = np.array(sticks_in)[reduceme]
-
-    sigred = signals_in
-    wavered = sticks_in
-    # Set initial min and max of the wavelength window
-    min0 = np.min(wavered)
-    max0 = np.max(wavered)
-
-    tlen = len(wavered)  # Length of wavered
-
-    # Set both tmin and tmax to the bottom of the overall wavelength window.
-    tmax = min0
-    tmin = min0
-
-    wavewind = []
-
-    while tmax != max0:  # While the temp upper end of the window is not the overall max, keep doing this
-        if tlen == 1:  # The idea is that the top will keep going up until the window only has one stick in it, then the bottom is brought up to be the first stick after this point.
-            # This window then goes again for the next bin.
-            wavewind.append([tmin-windsize, tmax+windsize])  # append the previous bin that was found via the the else conditionals below.
-
-            tred1 = wavered > tmax  # since tmax is the top of the previous bin, find all sticks above this
-            tmin = np.min(wavered[tred1])  # New bin min is the first stick of the next bin.
-
-            tred2 = wavered < tmin+windsize
-            tred3 = tred1 & tred2
-            ttop = wavered[tred3]
-            tmax = np.max(ttop)
-            tlen = len(ttop)
-
-        else:
-            tred1 = wavered >= tmax  # Where reduced wave is greater than or equal to tmax
-            tred2 = wavered <= (tmax+windsize)  # Where reducedwave is less than or equal to tmax+windsize
-            tred3 = tred1 & tred2  # Combine both conditionals
-            ttop = wavered[tred3]  # ttop is now wavered[tmax<x<tmax+windsize]
-            tmax = np.max(ttop)
-            # Need a case to andle for there only being degenerate sticks in a given window. This dirty method should work.
-            if tmax == tmin:
-                tlen = 1
-            else:
-                tlen = len(ttop)
-    # Add the last bin.
-    wavewind.append([tmin-windsize, tmax+windsize])
-    wavebins = []
-    signalbins = []
-    for windows in wavewind:
-        l1 = wavered > windows[0]
-        l2 = wavered < windows[1]
-        l3 = l1 & l2  # This lets you combine two if conditionals and use them as index slices for lists.
-        wavebins.append(wavered[l3])
-        signalbins.append(sigred[l3])
-    data = {}
-    data['binned_waves'] = wavebins
-    data['binned_signals'] = signalbins
-    data['bin_windows'] = wavewind
-    return data
-
-
 def MultiSpec(appendlist, scalelist):
-    '''    
-
-    Parameters
-    ----------
-    appendlist : List
-        DA list of calculated Zeeman objects as output from Zeeman_Main
-    scalelist : List
-        Scaling factor for the signals.
-
-    Returns
-    -------
-    [[Waves],[Signals]]
-
-    '''
-    comblist = np.array([])
-    comblist2 = np.array([])
-    for scalers, things in zip(scalelist, appendlist):
-        comblist = np.append(comblist, things['wave_air'])
-        comblist2 = np.append(comblist2, scalers*things['signal'])
-    return [comblist, comblist2]
-
+    """
+    Combines several Zeeman outputs into single arrays for wavelength, signal,
+    temperature, and atomic mass.
+    """
+    waves = np.array([])
+    signals = np.array([])
+    temps = np.array([])
+    amus = np.array([])
+    
+    for scaler, obj in zip(scalelist, appendlist):
+        waves = np.append(waves, obj['wave_air'])
+        signals = np.append(signals, scaler * np.array(obj['signal']))
+        
+        # Capture metadata for each component to allow different T/amu during convolution
+        # Defaults to 300K and 1 amu if not found 
+        t_val = obj['Input'].get('Temp', 300)
+        a_val = obj['Input'].get('amu', 1)
+        
+        temps = np.append(temps, np.full_like(obj['wave_air'], t_val))
+        amus = np.append(amus, np.full_like(obj['wave_air'], a_val))
+        
+    return [waves, signals, temps, amus]
 
 def Convol_Sticks(x0, xwind, Temp_in, amu_in, stepsize_nm, function="", Skew_consts=[1, 1], vel_ion=0, specres=10, bidirect=False):
     '''
@@ -2916,52 +2654,98 @@ def Convol_Sticks(x0, xwind, Temp_in, amu_in, stepsize_nm, function="", Skew_con
 
     return [waveout, np.array(specout)]
 
+def make_stickbins(sticks_in, *data_arrays, windsize=.1):
+    wavered = sticks_in
+    min0, max0 = np.min(wavered), np.max(wavered)
+    tlen = len(wavered)
+    tmax = tmin = min0
+    wavewind = []
 
-def Convol_Spect(waves_in, signal_in, wave_wind, atomic_weight_amu, resolution_nm, Temperature_in=300, functiontype="", wind_size=.1, Skewness_consts=[1, 1], ionvel=0, specres=10, bidir=False):
+    while tmax != max0:
+        if tlen == 1:
+            wavewind.append([tmin - windsize, tmax + windsize])
+            tred1 = wavered > tmax
+            tmin = np.min(wavered[tred1])
+            tred2 = wavered < tmin + windsize
+            ttop = wavered[tred1 & tred2]
+            tmax = np.max(ttop)
+            tlen = len(ttop)
+        else:
+            tred1 = wavered >= tmax
+            tred2 = wavered <= (tmax + windsize)
+            ttop = wavered[tred1 & tred2]
+            tmax = np.max(ttop)
+            tlen = 1 if tmax == tmin else len(ttop)
+    
+    wavewind.append([tmin - windsize, tmax + windsize])
+    
+    wavebins = []
+    binned_data = [[] for _ in data_arrays]
+    for windows in wavewind:
+        mask = (wavered > windows[0]) & (wavered < windows[1])
+        wavebins.append(wavered[mask])
+        for i, arr in enumerate(data_arrays):
+            binned_data[i].append(np.array(arr)[mask])
+            
+    return {'binned_waves': wavebins, 'binned_data': binned_data, 'bin_windows': wavewind}
 
-    # This block reduces the waves and signals to be only values that are greater than 0.01*max/numsticks
+def Convol_Spect(waves_in, signal_in, spec_wind, plot_wind, atomic_weight_amu, resolution_nm, 
+                 Temperature_in=300, functiontype="", wind_size=.1, 
+                 Skewness_consts=[1, 1], ionvel=0, specres=10, bidir=False):
 
-    reducer1 = np.array(signal_in) > (0.05 * np.max(signal_in)/len(signal_in))
+    # 1. Resolve inputs into arrays
+    amus_arr = np.full_like(waves_in, atomic_weight_amu) if not hasattr(atomic_weight_amu, "__len__") else atomic_weight_amu
+    temps_arr = np.full_like(waves_in, Temperature_in) if not hasattr(Temperature_in, "__len__") else Temperature_in
 
-    reducer2 = np.logical_and(waves_in > np.min(wave_wind), waves_in < np.max(wave_wind))
-    reducer3 = reducer1 & reducer2
-    twavered = waves_in[reducer3]
-    tsigred = signal_in[reducer3]
+    # 2. Physics Reduction (spec_window) - used for the actual math
+    phys_reducer = (np.array(signal_in) > (0.05 * np.max(signal_in)/len(signal_in))) & \
+                   (waves_in > np.min(spec_wind)) & (waves_in < np.max(spec_wind))
+    
+    t_wav_phys, t_sig_phys = waves_in[phys_reducer], signal_in[phys_reducer]
+    t_temp_phys, t_amu_phys = temps_arr[phys_reducer], amus_arr[phys_reducer]
 
-    # This function makes "bins" of anytime there are sticks that are within +/-1 nm of any other sticks (including itself)
-    # This vastly speeds up the calculations as anytime this isn't true will just be padded with 0 signal
-    # 0.5nm is like 50 fwhm at 100000K or something.
-    tbins = make_stickbins(twavered, tsigred, windsize=wind_size)
+    # 3. Stick Reduction (plot_window) - THIS IS THE FIX
+    # This ensures redsticks contains ONLY what is visible on the plot
+    plot_mask = (t_wav_phys >= np.min(plot_wind)) & (t_wav_phys <= np.max(plot_wind))
+    redsticks = [t_wav_phys[plot_mask], t_sig_phys[plot_mask]]
 
-    # We make the first element of the spectra be a 0 value so the plot looks a little nicer by extending the line to the given windowing edge.
-    tempwavs = []
-    tempsigs = []
-    for sticks, sigs, winds in zip(tbins['binned_waves'], tbins['binned_signals'], tbins['bin_windows']):
-        twav = np.linspace(winds[0], winds[1], int(round(specres*(winds[1] - winds[0])/resolution_nm)))  # Factor of 10 for better resolution
-        # twav = np.linspace(winds[0], winds[1], int(round((winds[1] - winds[0])/resolution_nm))) #Factor of 10 for better resolution
+    # 4. Binning and Convolution
+    tbins = make_stickbins(t_wav_phys, t_sig_phys, t_temp_phys, t_amu_phys, windsize=wind_size)
 
+    tempwavs, tempsigs = [], []
+    for sticks, data_list, winds in zip(tbins['binned_waves'], zip(*tbins['binned_data']), tbins['bin_windows']):
+        # Optimization: Skip bins entirely outside the plot window
+        if winds[1] < np.min(plot_wind) or winds[0] > np.max(plot_wind):
+            continue
+            
+        sigs, temps, amus = data_list
+        twav = np.linspace(winds[0], winds[1], int(round(specres*(winds[1] - winds[0])/resolution_nm)))
         tsig = np.zeros_like(twav)
-        for wavs, sigvals in zip(sticks, sigs):
-            tspec = Convol_Sticks(wavs, [winds[0], winds[1]], Temperature_in, atomic_weight_amu, resolution_nm, function=functiontype, Skew_consts=Skewness_consts, vel_ion=ionvel, specres=specres, bidirect=bidir)
-            tsig = tsig + sigvals*tspec[1]
+        
+        for w, s, t, a in zip(sticks, sigs, temps, amus):
+            tspec = Convol_Sticks(w, [winds[0], winds[1]], t, a, resolution_nm, 
+                                 function=functiontype, Skew_consts=Skewness_consts, 
+                                 vel_ion=ionvel, specres=specres, bidirect=bidir)
+            tsig += s * tspec[1]
 
         tempwavs.extend(twav)
         tempsigs.extend(tsig)
 
-    # We want the function to appear to plot over the plot window, which can be achieved by adding a 0 signal value for the min and max wavelengths fro the given window.
+    # 5. Final Spectrum Clipping
+    out_w, out_s = np.array(tempwavs), np.array(tempsigs)
+    mask = (out_w >= np.min(plot_wind)) & (out_w <= np.max(plot_wind))
+    
+    final_spectrum = [np.concatenate([[np.min(plot_wind)], out_w[mask], [np.max(plot_wind)]]),
+                      np.concatenate([[0], out_s[mask], [0]])]
 
-    tempwavs = np.insert(tempwavs, 0, np.min(wave_wind))
-    tempwavs = np.append(tempwavs, np.max(wave_wind))
-
-    tempsigs = np.insert(tempsigs, 0, 0)
-    tempsigs = np.append(tempsigs, 0)
-
-    spectholder = [tempwavs, tempsigs]
-
-    return spectholder, [twavered, tsigred], tbins['bin_windows']
+    return final_spectrum, redsticks, tbins['bin_windows']
 
 
 # %%Read Inputs
+
+
+
+
 
 def read_Spectra(filename, scalewave=1, headercount=1, keepheaders=False):
     '''

@@ -1,6 +1,8 @@
 __pycache__
 .spyproject
 /.spyproject/config
+.git
 CurrentWork
 Spect_split_ext_field.py
+README.md
 LZ_*
