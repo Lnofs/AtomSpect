@@ -223,7 +223,7 @@ if doHighTemp:
                           # 'Pol_angle': 90 ,#Angle polarizing filter makes with max linear transmission, Optional
     
                        }
-        InputdeckCII_CII
+     
     
     
         OII_465 = Zeeman_Main(InputdeckOII)
@@ -245,7 +245,7 @@ if doHighTemp:
         # scalers = [0,0,1,1]
         combspect = MultiSpec(multispecs,scalers)
         #Unfortunately, all included atoms will have the same temp, velocity, and mass currently.
-        Combspec = Convol_Spect(combspect[0],combspect[1], [462,470], combspect[3], 0.035,Temperature_in=combspect[2],
+        Combspec = Convol_Spect(combspect[0],combspect[1], [462,470],[464.5,465.5], combspect[3], 0.035,Temperature_in=combspect[2],
                                   functiontype = "GaussianInstrum", wind_size = 1, ionvel=-2500)
         
     

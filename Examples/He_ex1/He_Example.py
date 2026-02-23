@@ -22,7 +22,7 @@ doHePol2 = 1 # Shows non-dipole component and inability to fully filter polariza
 
 doHeNonPol = 0 # Shows multiple B fields with all three regimes
 doHeNonPol2 = 0  # All 3 B fields, show sticks (dipole only)
-doHeNonPol3 = 0 # Single B - show non-dipole required to match
+doHeNonPol3 =  0# Single B - show non-dipole required to match
 
 # savepdf = 0
 
@@ -235,18 +235,18 @@ if doHeNonPol == True:
             taxs = PlotFunction(HeNonPol, HeNonPol_PlotVar[0], NormalizeSig=True,
                                 Shape=[1,len(Bmags)], makefig=True,
                                 plotlabel=f'B={Bvals}T', plotnondip=0, plotpol=0 , fig_size = (19.5,9))
-            PlotFunction([HeNonPol['SpecOutLow']], HeNonPol_PlotVar[1],  NormalizeSig=True, axsin=taxs[0][0], position=[i,0],
+            PlotFunction(HeNonPol['SpecOutLow'], HeNonPol_PlotVar[1],  NormalizeSig=True, axsin=taxs, position=[i,0],
                          makefig=False,plotwind = InputdeckHeNonPol['plot_window'],  plotnondip=0,plotpol=0)
-            PlotFunction([HeNonPol['SpecOutHigh']], HeNonPol_PlotVar[2],  NormalizeSig=True, axsin=taxs[0][0], position=[i,0],
+            PlotFunction(HeNonPol['SpecOutHigh'], HeNonPol_PlotVar[2],  NormalizeSig=True, axsin=taxs, position=[i,0],
                          makefig=False,plotwind = InputdeckHeNonPol['plot_window'],  plotnondip=0,plotpol=0)
      
         else:
-            PlotFunction(HeNonPol, HeNonPol_PlotVar[0],  NormalizeSig=True, axsin=taxs[0][i], position=[0, i],
+            PlotFunction(HeNonPol, HeNonPol_PlotVar[0],  NormalizeSig=True, axsin=taxs, position=[0, i],
                             makefig=False,  plotlabel=f'B={Bvals}T', plotnondip=0, plotpol=0)         
-            PlotFunction([HeNonPol['SpecOutHigh']], HeNonPol_PlotVar[2],  NormalizeSig=True, axsin=taxs[0][i], position=[i,0],
+            PlotFunction(HeNonPol['SpecOutHigh'], HeNonPol_PlotVar[2],  NormalizeSig=True, axsin=taxs, position=[0,i],
                          makefig=False,plotwind = InputdeckHeNonPol['plot_window'],  plotnondip=0,plotpol=0)
             
-            PlotFunction([HeNonPol['SpecOutLow']], HeNonPol_PlotVar[1],  NormalizeSig=True, axsin=taxs[0][i], position=[i,0],
+            PlotFunction(HeNonPol['SpecOutLow'], HeNonPol_PlotVar[1],  NormalizeSig=True, axsin=taxs, position=[0,i],
                          makefig=False,plotwind = InputdeckHeNonPol['plot_window'],  plotnondip=0,plotpol=0 , legcols=4)
     plt.tight_layout(rect=[0, 0, 1, .9])
 
