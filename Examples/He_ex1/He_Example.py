@@ -6,7 +6,6 @@ Example of Helium spectra taken in Auburn Universities Magnetized Dusty Plasma E
 @author: Leo Nofs
 """
 
-from AtomSpect import Zeeman_Main, Normalize, PlotFunction, read_Spectra,  MakeSlider,  plotZfan, Savenpy_Dict, Loadnpy_Dict
 import os
 import sys
 import numpy as np
@@ -15,23 +14,25 @@ import matplotlib
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
 
+from AtomSpect import Zeeman_Main, Normalize, PlotFunction, read_Spectra,  MakeSlider,  plotZfan, Savenpy_Dict, Loadnpy_Dict
+
 
 # Flags for doing polarized or not
-doHePol = 1  # Shows all pols - inability to remove all of one pol
-doHePol2 = 1 # Shows non-dipole component and inability to fully filter polarizations (Paschen Back)
+doHePol = 0  # Shows all pols - inability to remove all of one pol
+doHePol2 = 0 # Shows non-dipole component and inability to fully filter polarizations (Paschen Back)
 
 doHeNonPol = 1 # Shows multiple B fields with all three regimes
-doHeNonPol2 = 1  # All 3 B fields, show sticks (dipole only)
-doHeNonPol3 =  1# Single B - show non-dipole required to match
+doHeNonPol2 = 0  # All 3 B fields, show sticks (dipole only)
+doHeNonPol3 =  0# Single B - show non-dipole required to match
 
 # savepdf = 0
 
-savepdf = 1
+savepdf = 0
 savepng = 0
 savedpi = 144
-fanplot = 1 #Ground State Fan
-fanplot2 = 1 #Excited State Fan
-do_HeSlider = 0
+fanplot = 0 #Ground State Fan
+fanplot2 = 0 #Excited State Fan
+do_HeSlider = 1
 do_Hepolslider = 0
 
 closeplots = 0
