@@ -17,20 +17,20 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.pat
 
 
 # Flags for doing polarized or not
-doHePol = 0  # Shows all pols - inability to remove all of one pol
+doHePol = 1  # Shows all pols - inability to remove all of one pol
 doHePol2 = 1 # Shows non-dipole component and inability to fully filter polarizations (Paschen Back)
 
-doHeNonPol = 0 # Shows multiple B fields with all three regimes
-doHeNonPol2 = 0  # All 3 B fields, show sticks (dipole only)
-doHeNonPol3 =  0# Single B - show non-dipole required to match
+doHeNonPol = 1 # Shows multiple B fields with all three regimes
+doHeNonPol2 = 1  # All 3 B fields, show sticks (dipole only)
+doHeNonPol3 =  1# Single B - show non-dipole required to match
 
 # savepdf = 0
 
-savepdf = 0
+savepdf = 1
 savepng = 0
 savedpi = 144
-fanplot = 0 #Ground State Fan
-fanplot2 = 0 #Excited State Fan
+fanplot = 1 #Ground State Fan
+fanplot2 = 1 #Excited State Fan
 do_HeSlider = 0
 do_Hepolslider = 0
 
@@ -81,7 +81,7 @@ if doHePol2 == True:
                           }
 
         HePol = Zeeman_Main(InputdeckHePol)
-        HePol_PlotObj = ['royalblue', 2.0, 'solid', 'Exact']
+        HePol_PlotObj = ['royalblue', 2.0, 'solid', 'Intermediate']
 
         if i == 0:
             taxs = PlotFunction(HePol, HePol_PlotObj, NormalizeSig=True,
@@ -154,22 +154,22 @@ if doHePol == True:
                           'SpectrumData': [He_PolShift, He_Pol_Spec['signals'][i]],  # Spectrometer Data.
                           'plot_window': [447.1, 447.2],  # Min and max for plot window range (nm), convolutions will only take place within this range
                           'amu': 2,  # Weight in AMU
-                          'specres': 1,  # How many steps per resolution are calculated. Higher makes a smoother curve.
+                          'specres':3,  # How many steps per resolution are calculated. Higher makes a smoother curve.
                           # 'sortE' : True
 
 
                           }
 
         HePol = Zeeman_Main(InputdeckHePol)
-        HePol_PlotObj = ['royalblue', 2.5, 'solid', 'Exact']
+        HePol_PlotObj = ['royalblue', 2.5, 'solid', 'Intermediate']
 
         if i == 0:  # In the future, automate this process of the plotting.
             taxs = PlotFunction(HePol, HePol_PlotObj, NormalizeSig=True,
                                 Shape=[len(polangles), 1], makefig=True,
-                                plotlabel=r'$\gamma$' + f'={angles}' + r'$^o$')
+                                plotlabel=r'$\gamma$' + f'={angles}' + r'$^o$',marker_count=5)
         else:
             PlotFunction(HePol, HePol_PlotObj,  NormalizeSig=True, axsin=taxs[i][0], position=[0, i],
-                         makefig=False,  plotlabel=r'$\gamma$' + f'={angles}' + r'$^o$')
+                         makefig=False,  plotlabel=r'$\gamma$' + f'={angles}' + r'$^o$',marker_count=5)
             
     # tfig = taxs[0][0].get_figure()   
     # plt.subplots_adjust(hspace=0, wspace=0)
@@ -227,9 +227,9 @@ if doHeNonPol == True:
 
         colorlist = ['royalblue', 'g', 'r', 'brown', 'm', 'c', 'y', 'black', 'seagreen']
         HeNonPol_PlotVar = [] 
-        HeNonPol_PlotVar.append(['royalblue', 2.5, 'solid', 'Exact','D'])
-        HeNonPol_PlotVar.append( [colorlist[1], 1.5, '-.', 'Low','X'])
-        HeNonPol_PlotVar.append( [colorlist[2], 1.5, '--', 'High','o'])
+        HeNonPol_PlotVar.append(['royalblue', 2.5, 'solid', 'Intermediate','D'])
+        HeNonPol_PlotVar.append( [colorlist[1], 1.5, '-.', 'Weak-field','X'])
+        HeNonPol_PlotVar.append( [colorlist[2], 1.5, '--', 'Strong-field','o'])
 
         if i == 0:  # In the future, automate this process of the plotting.
             taxs = PlotFunction(HeNonPol, HeNonPol_PlotVar[0], NormalizeSig=True,
@@ -298,7 +298,7 @@ if doHeNonPol2 == True:
         HeNonPol2 = Zeeman_Main(InputdeckHeNonPol2)
 
         colorlist = ['royalblue', 'g', 'r', 'brown', 'm', 'c', 'y', 'black', 'seagreen']
-        HeNonPol_PlotVar= ['royalblue', 2.5, 'solid', 'Exact']
+        HeNonPol_PlotVar= ['royalblue', 2.5, 'solid', 'Intermediate']
 
 
         if i == 0:  # In the future, automate this process of the plotting.
@@ -357,7 +357,7 @@ if doHeNonPol3 == True:
     
     colorlist = ['royalblue', 'g', 'r', 'brown', 'm', 'c', 'y', 'black', 'seagreen']
     
-    HeNonPol_PlotObj = [colorlist[0], 2.5, 'solid', 'Exact']
+    HeNonPol_PlotObj = [colorlist[0], 2.5, 'solid', 'Intermediate']
     
     taxs = PlotFunction(HeNonPol3, HeNonPol_PlotObj, NormalizeSig=True,
                         makefig=True,  plotlabel=f'B={Bmags}T', plotpol=1, plotnondip=1)

@@ -304,7 +304,7 @@ def plotarray(shape, figure_size=(10, 8),fontsize=18):
     plt.rc('font', **font)
 
 
-    #1. Go through the array and define the plots in the subfigure.
+    #Go through the array and define the plots in the subfigure.
     #Iterate through the range and set that the columns and rows have shared axes.
     
     for rows in range(shape[0]):
@@ -340,7 +340,9 @@ def plotarray(shape, figure_size=(10, 8),fontsize=18):
 
 
 def parse_plot_data(Plotobject):
-    # Case 1: Already a list of objects (like your Helium batch)
+    #This is a helper function which parses possible input structures for use in the PlotFunction.
+    
+    # Case 1: Already a list of objects
     # Check if first element is a dictionary or a nested list
     if isinstance(Plotobject, list):
         if len(Plotobject) > 0 and isinstance(Plotobject[0], (dict, list, np.ndarray)):
@@ -364,6 +366,7 @@ def parse_plot_data(Plotobject):
 def get_target_axis(taxs, position):
     '''
     Safely extracts a single target axis regardless of taxs array dimensions.
+    This is for use with PlotFunction with multiple calls for overlapping plotting of different objects etc.
     '''
     # If taxs is already a single axis object (e.g. from a manual slice), return it
     if not isinstance(taxs, np.ndarray):
@@ -408,7 +411,7 @@ def consolidate_legend(tfig, plotpol=True, plotnondip=False, legcols=None, fonts
     labels = list(unique_map.keys())
     handles = list(unique_map.values())
 
-    # Determine layout adjustment and column count
+    # Determine layout adjustment and column count based input flags
     if legcols:
         cols = legcols
         rect_adj = [0, 0, 1, 0.95]
@@ -432,7 +435,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
                  position=[0, 0], axsin=[], NormalizeSig=False, NormalizeScale=1, makefig=True,  
                  fig_size=(10, 8), plotpol=True, plotlabel='', plotnondip=False, dotwin=False,  
                  marker=None, marker_count=None, fontsize=None, ScaleSpectrometer=None,  
-                 SpectrometerLabel='Spectrometer', SpectrometerMarker='d', SpectrometerColor='black', 
+                 SpectrometerLabel='Spectrometer', SpectrometerMarker=None, SpectrometerColor='black', 
                  SpectrometerLS='solid', legcols=None): 
          
     '''
@@ -510,11 +513,11 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
     '''
 
     # --- 1. Standardize Input and Initialization --- 
-    # Use your global parser to ensure we always have a list of objects to loop over
+    # Use the intput parser to ensure we always have a list of objects to loop over
     Plotobject = parse_plot_data(Plotobject)
     
     font_size = fontsize if fontsize else 18 
-    markcount = marker_count if marker_count else 20 
+    markcount = marker_count if marker_count else 50
     spectrometer_scale = ScaleSpectrometer if ScaleSpectrometer else 1 
      
     if len(np.shape(plot_vars)) == 1: 
@@ -522,6 +525,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
     else: 
         working_vars = plot_vars 
 
+    #Setting up the marker styles if input, otherwise default to circles.
     resolved_markers = [] 
     for v in working_vars: 
         if len(v) > 4:  
@@ -537,7 +541,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
     else: 
         taxs = axsin 
      
-    # Use your global helper to extract the correct axis from [1,m], [n,1], or [n,m] arrays
+    # Use the global helper to extract the correct axis from [1,m], [n,1], or [n,m] arrays
     target_axis = get_target_axis(taxs, position)
     tfig = target_axis.get_figure() 
 
@@ -547,7 +551,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
      
     for x in Plotobject: 
         if isinstance(x, dict): 
-            # Fallback to wave_air/signal if SpecOut isn't the key (common for approximations)
+            # Fallback to wave_air/signal if SpecOut isn't the key 
             tPlotObj.append(x.get('SpecOut', [x.get('wave_air'), x.get('signal')])) 
             if main_dict is None: main_dict = x 
         else: 
@@ -580,7 +584,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
              
         target_axis.plot(tplot_data[0], y_data, color=p_vars[0], linestyle=p_vars[2],  
                          linewidth=p_vars[1], label=p_vars[3], alpha=0.8, 
-                         marker=resolved_markers[i], markevery=markcount, markersize=5) 
+                         marker=resolved_markers[i], markevery=markcount, markersize=9) 
 
     # --- 5. Styling and Limits --- 
     plottingwind = plotwind 
@@ -710,8 +714,9 @@ def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=Tru
     #Plot the spectrometer data
     axs.plot(Spectra[0], Spectra[1], color="black", label="Spectrometer")
 
-    #Check for polvary
+    #Check for polvary and/or banglevary flags and initilize with the respective cases.
     if polvary and not banglevary:
+        #Assume bangle=90 by default (perpendicular to LoS)
         Mycalc0 = Zslider_Pol(init_B, init_Temp, init_Res, init_bang, init_polang, Inputdict)
     elif banglevary and not polvary:
         Mycalc0 = Zslider_Pol(init_B, init_Temp, init_Res, init_bang, None, Inputdict)
@@ -719,6 +724,7 @@ def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=Tru
         Mycalc0 = Zslider_Pol(init_B, init_Temp, init_Res, init_bang, init_polang, Inputdict)
 
     else:
+        #Have no 
         Mycalc0 = Zslider(init_B, init_Temp, init_Res, Inputdict)
         Bang_Slider = None
         Polang_Slider = None
@@ -1100,7 +1106,7 @@ def make_Jmj(J_am):
     # cycling through the mJ's for each J.
     # =============================================================================
     #
-    #     'Starting with the lowest J is likely to cause some issues and there should, instead, be a generalized way for the user to input the J-values ordering'
+    #     'Starting with the lowest J has the potential to cause some issues and there should, instead, be a generalized way for the user to input the J-values ordering'
     #     'The issue would be because the eigval function sorts in ascending order of energies, so I should do likewise, as that may correct for potential issues'
     #     'with energy ordering and states as tracking past diagonalization is not possible.'
     # =============================================================================
@@ -1156,7 +1162,7 @@ def polarization(mupper, mlower, Btheta, gamma=0, Pol_Filter=False, T_Alpha=1, T
 
     # eps1 is the for a change in am of 1 (sigma)
     eps1 = 0.5*np.sqrt((np.cos(theta_rad)**2) * (ealph**2) + (ebeta**2))  # While this looks like Isler appendix, we haven't squared it for the intensity calc yet.
-    # eps1 = np.sqrt(0.5*(np.cos(theta_rad)**2) * (ealph**2) + (ebeta**2 ))
+
 
     # Calculate and check the change in magnetic angular momentum. circularly (sigma) light has a change of +/-1, linear (pi) is a change of 0.
     delta_am = np.array(mupper) - np.array(mlower)
@@ -1170,7 +1176,7 @@ def polarization(mupper, mlower, Btheta, gamma=0, Pol_Filter=False, T_Alpha=1, T
         case 0:
             rad_tmp = [eps0, 0]
         case _:
-            rad_tmp = [0, 3]
+            rad_tmp = [0, 3] #This allows tracking of what should be traditionaly forbidden transitions under dipole only
     return rad_tmp
 
 
@@ -1374,9 +1380,8 @@ def Zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False):
     tsigout = np.array(signal_out)
     sigsum = np.sum(tsigout)
 
-    sigout_raw = tsigout
-    # sigout=sigout_raw
     sigout = np.array([x/sigsum for x in tsigout])  # Make it so that sum of intensities is 1.
+    #This means we have an oscillator strength here.
     # Conver the output to wavelength in nm then account for shift from vacuum to air.
     wave_vac = np.array([1e7/(y-x) for y in LZE[0] for x in LZG[0]])
     wave_air = Vac_to_air(wave_vac)
@@ -1442,7 +1447,6 @@ def Zeeman_func(Level_in, Binput, Lowfield=False, Highfield=False, Eterm=None):
     tmSMat = np.diagflat([x[5] for x in Level_in[-1]])
 
     # This is equivalent to the <n|Jz|m> calculation to make the pertubation matrix of zeeman energies
-    # The += doesn't seem to change anything, but is kept as my original code used it
     for i in range(Ldim):
         tPsiL = Psi[i]
         for j in range(Ldim):
@@ -1485,21 +1489,19 @@ def Zeeman_func(Level_in, Binput, Lowfield=False, Highfield=False, Eterm=None):
 def HZeeman(Level_in):
     '''
     Calculates the Zeeman Energy from the Hamiltonian using perturbation theory of <psi' |H'|psi> for H' = H_Zeeman for each m (ml, ms)
-    This is a scaled value, equivalent to B=1T, and so scalar multpilication of our desired magnetic field will yeild the correct Energy.
-
+    This just outputs the Zeeman Hamiltonian, assuming B = 1T. This Zeeman component can be scaled based on the magnetic field strength.
 
 
     Parameters
     ----------
-    Level_in : TYPE
-        DESCRIPTION.
-    Binput : TYPE
-        DESCRIPTION.
+    Level_in : List
+        This is the output of the StateProcess function of the format Level=[w3mat, Eo_mat,E0_flat,bigstatelist]
+
 
     Returns
     -------
     list
-        DESCRIPTION.
+        [E0, H_Zeeman], where E0 is the zero-field energies and H_Zeeman is the Zeeman energies at 1T.
 
     '''
     # Level=[CGmat, Eo_mat,E0_flat,bigstatelist]
@@ -1518,23 +1520,7 @@ def HZeeman(Level_in):
     tmSMat = np.diagflat([x[5] for x in Level_in[-1]])
 
     # This is equivalent to the <n|Jz|m> calculation to make the pertubation matrix of zeeman energies
-    # The += doesn't seem to change anything, but is kept as my original code used it
-    # for i in range(Ldim):
-    #     for j  in range(Ldim):
-    #         PsiL[i,j] = Psi[i]@tmLMat@PsiR[i]
-    #         PsiS[i,j] = Psi[i]@tmSMat@PsiR[i]
-    # PsiL = np.zeros_like(Psi)
-    # PsiS = np.zeros_like(Psi)
 
-    # #bigstatelist [J,mJ,L,mL,S,mS]
-    # #Create diagonal elements for the m values for each qm. Doing this is forcing that <n|m> = delta_nm, so 1 if n=m, but 0 else.
-    # #The resulting PsiL,PsiS are NOT diagonal due to the J-> LS coupling done. However, the result is accurate for applying
-    # # the Lz or Sz operator onto the state.
-    # tmLMat = np.diagflat([x[3] for x in Level_in[-1]])
-    # tmSMat = np.diagflat([x[5] for x in Level_in[-1]])
-
-    # This is equivalent to the <n|Jz|m> calculation to make the pertubation matrix of zeeman energies
-    # The += doesn't seem to change anything, but is kept as my original code used it
     for i in range(Ldim):
         tPsiL = Psi[i]
         for j in range(Ldim):
@@ -1683,6 +1669,7 @@ def stateprocess_HFS(L_state, S_state, I_state, HFS_Const, g_I, E_level, thisB, 
         # Calculate Hyperfine energies with sorted states and values.
         E_HFSFlat = [Delta_E_HFS(states1[4], states1[2], states1[0], HFS_Flat[i], HFS_FlatB[i]) for i, states1 in enumerate(bigstatelist)]  # Hyperfine + E0 (spin orbital, Nist)
 
+        #Holdovers from work with HFS energy contributions. Left for future possible use.
         # E0_HFSFlat = [E_cm[i] + Delta_E_HFS(states1[4],states1[2],states1[0], HFS_Flat[i], HFS_FlatB[i])    for i,states1 in enumerate(bigstatelist)] #Hyperfine + E0 (spin orbital, Nist)
         # E_HFSA = [Delta_E_HFS(states1[4],states1[2],states1[0], sortedHFC[i],0)    for i,states1 in enumerate(sortedstates)] #Just Hyperfine energy
         # E_HFSB = [Delta_E_HFS(states1[4],states1[2],states1[0], 0, B=sortedHFCB[i])    for i,states1 in enumerate(sortedstates)] #Just Hyperfine energy
@@ -1741,8 +1728,9 @@ def dipolestr_HFS(LG, LE):
 
     Returns
     -------
-    tdp3 : TYPE
-        DESCRIPTION.
+    tdp3 : float
+        This is the u_eg dipole scalar for a specific transition between states (m-resolved)
+        For use with nuclear spin only.
 
     '''
     # States are from bigsortedlist = [F,mF,J,mJ,I,mI,L,mL,S,mS]
@@ -1951,8 +1939,10 @@ def HZeeman_HFS(Level_in, gI):
 
 
 def FastZfan(States_in, Bfield, Eterm_=0, g_I=0, A_HFS=0):
-    #
-
+    
+    # This is a supporting function which is for streamlining the diagonalization process which makes it much faster
+    # Only the required calculation steps are taken for each magnetic field as the E0 and wavefunctions for zero-field don't change.
+    # So make the wavefunctions once only before diagonalization.
     # Make a large list of [F,mF,J,mJ,I,mI,L,mL,S,mS] HFS or [J,mJ,L,mL,S,mS] no HFS
     ZfansLow = []
     ZfansHigh = []
@@ -2184,7 +2174,7 @@ def plotZfan(Inputdeck, flags='', savefig=False, figname='placeholder',markercou
         figs, axs = plt.subplots(figsize=(12, 10))
         plt.rcParams.update({'font.size': 18})
 
-        axs.plot(Brange[0], Zfantest['G'][0][0], color='blue',  linewidth=.75, label="Exact", 
+        axs.plot(Brange[0], Zfantest['G'][0][0], color='blue',  linewidth=.75, label="Intermediate", 
                  marker='D', markevery=markercount,markersize=markersize_, alpha=0.8)  # This makes a single point for the purpose of the legend.
         for things in (Zfantest['G']):
             axs.plot(Brange, things, color='blue',  linewidth=.75,
@@ -2194,13 +2184,13 @@ def plotZfan(Inputdeck, flags='', savefig=False, figname='placeholder',markercou
             for thingsL in (Zfantest['LowG']):
                 plt.plot(Brange, thingsL, color='maroon', linestyle=':', linewidth=.75,
                          marker='x', markevery=markercount-2,markersize=markersize_L, alpha=0.9)    # , label = "Ground_Low")
-            axs.plot(Brange[0], Zfantest['LowG'][0][0], color='maroon', linestyle=':', label="Ground Low",
+            axs.plot(Brange[0], Zfantest['LowG'][0][0], color='maroon', linestyle=':', label="Ground Weak",
                      marker='x', markevery=markercount-2,markersize=markersize_L, alpha=0.8)  # This makes a single point for the purpose of the legend.
         if 'H' in flags:
             for thingsH in (Zfantest['HighG']):
                 plt.plot(Brange, thingsH, color='green', linestyle='-.', linewidth=.75,
                          marker='o', markevery=markercount+2,markersize=markersize_H, alpha=0.8)   # , label = "Ground_Low")
-            axs.plot(Brange[0], Zfantest['HighG'][0][0], color='green', linestyle='-.', label="Ground High",linewidth=.75,
+            axs.plot(Brange[0], Zfantest['HighG'][0][0], color='green', linestyle='-.', label="Ground Strong",linewidth=.75,
                      marker='o', markevery=markercount+2,markersize=markersize_H, alpha=0.8)  # This makes a single point for the purpose of the legend.
         # plt.ylim(np.min(things),np.max(things))
         axs.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.1f}"))
@@ -2211,7 +2201,7 @@ def plotZfan(Inputdeck, flags='', savefig=False, figname='placeholder',markercou
         figs, axs = plt.subplots(figsize=(12, 10))
         plt.rcParams.update({'font.size': 18})
 
-        axs.plot(Brange[0], Zfantest['E'][0][0], color='blue',  linewidth=.75, label="Exact", 
+        axs.plot(Brange[0], Zfantest['E'][0][0], color='blue',  linewidth=.75, label="Intermediate", 
                  marker='D', markevery=markercount,markersize=markersize_, alpha=0.8)  # This makes a single point for the purpose of the legend.
         for things2 in Zfantest['E']:
             axs.plot(Brange, things2, color='blue', linewidth=.75,
@@ -2220,13 +2210,13 @@ def plotZfan(Inputdeck, flags='', savefig=False, figname='placeholder',markercou
             for thingsL in (Zfantest['LowE']):
                 axs.plot(Brange, thingsL, color='maroon', linestyle=':', linewidth=.75,
                          marker='x', markevery=markercount-2,markersize=markersize_L, alpha=0.8) # , label = "Ground_Low")
-            axs.plot(Brange[0], Zfantest['LowE'][0][0], color='maroon', linestyle=':', label="Excited Low",linewidth=.75,
+            axs.plot(Brange[0], Zfantest['LowE'][0][0], color='maroon', linestyle=':', label="Excited Weak",linewidth=.75,
                      marker='x', markevery=markercount-2,markersize=markersize_L, alpha=0.8) # This makes a single point for the purpose of the legend.
         if 'H' in flags:
             for thingsH in (Zfantest['HighE']):
                 axs.plot(Brange, thingsH, color='green', linestyle='-.',linewidth=.75,
                          marker='o', markevery=markercount+2,markersize=markersize_H, alpha=0.8)   # , label = "Ground_Low")
-            axs.plot(Brange[0], Zfantest['HighE'][0][0], color='green', linestyle='-.', label="Excited High",linewidth=.75,
+            axs.plot(Brange[0], Zfantest['HighE'][0][0], color='green', linestyle='-.', label="Excited Strong",linewidth=.75,
                      marker='o', markevery=markercount+2,markersize=markersize_H, alpha=0.8)   # This makes a single point for the purpose of the legend.
         # plt.ylim(np.min(things2),np.max(things2))
         axs.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.1f}"))
@@ -2525,6 +2515,8 @@ def Zeeman_Main(Inputdeck, **kwargs):
         specres = Inputdeck['specres']
     else:
         specres = 10
+        
+    #Make the convolution based on the sticks.
     ConvolvedSpect, redsticks, binwinds = Convol_Spect(data['wave_air'], data['signal'],
                                                        specwindow, plotwindow, Inputdeck['amu'], stepsize,
                                                        Temperature_in=convtemp, functiontype=Convtype,
@@ -2842,6 +2834,9 @@ def read_HFSInput(filename):
     return datraw
 #%% Save and Load
 def Savenpy_Dict(filename, Dict_in,spectra = None, Normalize_sig = False):
+    #This function should allow for saving of data so it doesn't need to be re-input everytime.
+    #This includes the input dictionary, which could then be easily compiled and re-called later.
+    #Work on this has not been fleshed out and it should be treated as such.
     savedat = {}
 
     if spectra:

@@ -27,7 +27,7 @@ InputRb = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , 
                       'Bmag': 0, #Magnetic Field  [T]
                       'b_angle': 90 , #Angle between LoS and Bmax
                       'spec_window' : [779.75,780.25], #Min and max function convolution
-                      'plot_window' :  [780.02,780.035], #Min and max for plot window range (nm)
+                      'plot_window' :  [779.9,780.15], #Min and max for plot window range (nm)
 
                       'amu' : 85.011 ,  #Weight in AMU
                       'specstep' : 0.005, #Resolution of spectrometer in nm
@@ -38,7 +38,7 @@ InputRb = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , 
                       # 'Pol_angle': Polangle ,#Angle polarizing filter makes with max linear transmission, Optional
                       'HFS_G' : [1011.910813e9] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                       'HFS_E': [120.527e6, 25e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
-                      # 'HFSB_E': [0,25.88e6] ,
+                      'HFSB_E': [0,25.88e6] ,
                       # 'PsiHFS': True, 
 
                       'I_spin' : 5/2, #Optional: nuclear spin, I, including parity. Tabulated by Stone et al.
@@ -54,7 +54,7 @@ InputRb_noHFS = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1)
                       'Bmag': 0, #Magnetic Field  [T]
                       'b_angle': 90 , #Angle between LoS and Bmax
                       'spec_window' : [779.75,780.25], #Min and max function convolution
-                      'plot_window' :  [780.02,780.035], #Min and max for plot window range (nm)
+                      'plot_window' :  [779.9,780.15], #Min and max for plot window range (nm)
 
                       'amu' : 85.011 ,  #Weight in AMU
                       'specstep' : 0.005 , #Resolution of spectrometer in nm
@@ -82,7 +82,7 @@ InputRb2 = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J ,
                       'Bmag': 2, #Magnetic Field  [T]
                       'b_angle': 90 , #Angle between LoS and Bmax
                       'spec_window' : [777.75,782.25], #Min and max function convolution
-                      'plot_window' :  [780.0,780.055], #Min and max for plot window range (nm)
+                      'plot_window' :  [779.9,780.15], #Min and max for plot window range (nm)
 
                       'amu' : 85.011 ,  #Weight in AMU
                       'specstep' : 0.005 , #Resolution of spectrometer in nm
@@ -108,7 +108,7 @@ InputRb_noHFS2 = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1
                       'Bmag': 2, #Magnetic Field  [T]
                       'b_angle': 90 , #Angle between LoS and Bmax
                       'spec_window' : [777.75,782.25], #Min and max function convolution
-                      'plot_window' :  [779.85,780.2], #Min and max for plot window range (nm)
+                      'plot_window' :  [779.9,780.15], #Min and max for plot window range (nm)
 
                       'amu' : 85.011 ,  #Weight in AMU
                       'specstep' : 0.005 , #Resolution of spectrometer in nm
@@ -146,10 +146,10 @@ Rb_noHFS2 = Zeeman_Main(InputRb_noHFS2)
 
 thixas = PlotFunction(Rb_I,Rb_PlotVars[0],plotwind = InputRb['plot_window'],
              # plottitle="Rb I",
-             NormalizeSig = True ,makefig=True , plotpol = False,marker_count=3)
+             NormalizeSig = True ,makefig=True , plotpol = False,marker_count=10)
 thixas[0][0].xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.3f}"))
 PlotFunction(Rb_noHFS,Rb_PlotVars[1],axsin = thixas,plotwind=InputRb['plot_window'] ,NormalizeSig=True,makefig=0,plotpol=False
-             ,marker_count = 7)  
+             ,marker_count = 20)  
 # thixas[0][0].text(0.05, 0.96, r'W$_i$ = 0.005 nm, B = 0T', verticalalignment='top',
 #                       horizontalalignment='left', transform=thixas[0][0].transAxes)
 
@@ -161,9 +161,9 @@ PlotFunction(Rb_noHFS,Rb_PlotVars[1],axsin = thixas,plotwind=InputRb['plot_windo
 #              # plottitle="Rb I",
 #              NormalizeSig = True ,makefig=True , plotpol = False, marker_count=5)
 PlotFunction(Rb_I2,Rb_PlotVars2[0], axsin = thixas[0][0],plotwind =InputRb2['plot_window'] ,NormalizeSig=1,
-             makefig=0,plotpol=False,marker_count=5)  
+             makefig=0,plotpol=False,marker_count=15)  
 PlotFunction(Rb_noHFS2,Rb_PlotVars2[1], axsin = thixas[0][0],plotwind =InputRb2['plot_window'] ,NormalizeSig=1,
-             makefig=0,plotpol=False,marker_count=5 ,legcols =2)  
+             makefig=0,plotpol=False,marker_count=15 ,legcols =2)  
 plt.tight_layout(rect=[0, 0, 1, 0.9])
 
 # thixas[0][0].text(0.05, 0.96, r'W$_i$ = 0.005 nm, B = 2T', verticalalignment='top',
@@ -201,39 +201,7 @@ if doRBfans:
                       # 'sortE' : True , 
     
                        }
-    InputdeckRbHFS_fan2 = {'s_ground':.5 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
-                      's_excited':.5 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
-                      'l_ground': 0 , #Orbital Angular Momentum of ground state, int or half int
-                      'l_excited': 1 ,#Orbital Angular Momentum of excited state, int or half int
-                      'E_ground': np.array([0]) ,#Lowest J first, in cm^-1
-                      'E_excited': np.array([12578.95,12816.545])  , #Lowest J first, in cm^-1
-                      'Bmag': Bfan2, #Magnetic Field  [T]
-                      'b_angle': 90 , #Angle between LoS and Bmax
-                      'plottitle':'Rb85, I = 5/2, S = 1/2, L = 1' , #Title for plotting (optional)     
-                      'plot_window' : [775,799] , #Min and max for plot window range (nm)
-                      'amu' : 85 ,  #Weight in AMU
-                      # 'specstep' : 0.002222 , #Resolution of spectrometer in nm
-                      # 'Convfxn' : 'Skewed' ,
-                      'Temp' : 300,
-                      # 'HFS_G' : [0]  , #Optional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
-                      # 'HFS_E': [0,0], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
-                      'HFS_G' : [1011e6]  , #Optional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
-                      'HFS_E': [120.527e6, 25.0354e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
-                      # 'HFS_E': [25e6, 120.527e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
-                      # 'EtermG': 0, #Term energy of lower state in cm^-1
 
-                    # 'EtermG': 169086.9076, #Term energy of lower state in cm^-1
-                    'EtermE': 12737.347, #Term energy of upper state in cm^-1
-                     # 'DoLowSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated.
-                     # 'DoHighSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated.
-
-                      'HFSB_E': [0,25.898e6] ,
-                      'I_spin' : 5/2, #Optional: nuclear spin, I, including parity. Tabulated by Stone et al.
-                      'mu_I' :  1.35298, #Optional: Nuclear dipole moment as tabulated by Stone.             
-                      # 'PsiHFS': True, 
-                      # 'sortE' : True , 
-    
-                       }
     # InputRb['Bmag'] = Bfan
     RBFanG = plotZfan(InputdeckRbHFS_fan,flags='G', markercount = 0)
     plt.xlim(0,.5)
@@ -246,7 +214,7 @@ if doRBfans:
 
 
   
-    RBFanE = plotZfan(InputdeckRbHFS_fan2,flags='E',markercount = 0)
+    RBFanE = plotZfan(InputdeckRbHFS_fan,flags='E',markercount = 0)
     plt.ylim(12816.52,12816.57)
     plt.xlim(0,0.015)
     plt.tight_layout()

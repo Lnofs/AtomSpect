@@ -47,12 +47,12 @@ InputHe = {'s_ground': 1 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , i
               'specstep' : 0.002222 , #Resolution of spectrometer in nm
               # 'Skewness' : [0.62,0.99] , #How non-symmetric the Lorrentzian is
               # 'Pol_angle': 90 ,#Angle polarizing filter makes with max linear transmission, Optional
-              'plottitle': 'He I 1s2p -> 1s4d: B=1.5T, Polarized'  , #Title for plotting (optional)     
+              'plottitle': 'He I 1s2p -> 1s4d: B=3.2T, UnPolarized'  , #Title for plotting (optional)     
               'plot_window' : [447.1,447.2], #Min and max for plot window range (nm), convolutions will only take place within this range
               'amu' : 2  ,#Weight in AMU
               'specres' : 10 , #How many steps per resolution are calculated. Higher makes a smoother curve.
               'DoLowSig' : 'Yes' , #If this exists in the input, lowfield signal strength will be calculated. 
-                'DoHighSig': 'Y' ,
+              'DoHighSig': 'Yes' , #To use Strong field approximation, you MUST include EtermE and EtermG keys for term energy
  
               }  
 
@@ -74,7 +74,7 @@ InputdeckCIII_4649 = {'s_ground':1 ,#Spin multiplicity,s, for ground state ^(2s 
                       'plottitle': r'CIII [1$s^2$]2s3s $(^3S_1)$ -> [1$s^2$]2s3p ($^3P_J$)', #Title for plotting (optional)     
 
                       # 'plottitle': f'CIII [1s^2]2s3s (^3S_1) -> [1s^2]2s3p (^3P_J): B=2.24T , LoS = {90}', #Title for plotting (optional)     
-                      'ion_vel' : -1700, #Ion velocity in m/s
+                      'ion_vel' : -1000, #Ion velocity in m/s
                       'fxnwindow': 1 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                       # 'Pol_angle': 50 ,#Angle polarizing filter makes with max linear transmission, Optional
                       # 'DoLowSig' : 'Yes' , #If this exists in the input, lowfield signal strength will be calculated. 
@@ -83,12 +83,9 @@ InputdeckCIII_4649 = {'s_ground':1 ,#Spin multiplicity,s, for ground state ^(2s 
                    }
 #
 CIII_Z = Zeeman_Main(InputdeckCIII_4649)
-# CIIISpec = np.load('CIII_2.24T.npy') #This is the spectrometer data
-CIIISpecLtemp = np.load('CIII_2.21T_7.9ev.npy') #This is the spectrometer data
 
-CIIIwave = [Vac_to_air(x) for x in CIIISpecLtemp[0]]
-CIIISig = Normalize(CIIISpecLtemp[1])
-CIII_Plotvars = [['green', 3, '-.','CIII']]                   
+
+               
 
 CIIISpecHighTemp = np.load('CIII_2.24T.npy') #This is the spectrometer data
 
@@ -97,18 +94,32 @@ CIIISigH = Normalize(CIIISpecHighTemp[1])
 CIII_PlotvarsH = [['green', 3, '-.','CIII']]                   
 
 
+#%%
+import xarray as xr
+fil9 = f"{pathfil}/figure9.nc" #Low Temp from Supra dataset.
 
+# sys.path.append(pathfil)
+
+
+# fig1 = xr.open_dataset(fil, engine="h5netcdf")
+fig9 = xr.open_dataset(fil9, engine="h5netcdf")
+
+#Fiber44 of 20230215.015 available on Aurora dataset, publication states B = 2.51T, alpha = 71 deg, vi = 1km/s, ti = 17 eV
+Fiber44sig = Normalize(fig9['spectrum_data'].values[1])
+Fiber44wav = fig9['spectrum_data']['wavelength'].values[1]
+AirFiber44 = [Vac_to_air(x) for x in Fiber44wav]
 
 #%%
-plt.close('all')
+# plt.close('all')
 
 
 
-MakeSlider(InputHe,[He_NonPol_Spec['wavelength'],He_NonPol_Spec['signals'][0]],[447.0,447.2],do_sticks = 0,do_Polplot=1,polvary=1,banglevary=0)
+# MakeSlider(InputHe,[He_NonPol_Spec['wavelength'],He_NonPol_Spec['signals'][0]],[447.1,447.2],do_sticks = 1,do_Polplot=0,polvary=0,banglevary=0)
 
-MakeSlider(InputdeckCIII_4649,[CIIIwaveH,CIIISigH],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
+# MakeSlider(InputdeckCIII_4649,[CIIIwaveH,CIIISigH],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
+# MakeSlider(InputdeckCIII_4649,[CIIIwaveL,CIIISigL],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
 
 
-MakeSlider(InputdeckCIII_4649,[CIIIwave,CIIISig],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
+MakeSlider(InputdeckCIII_4649,[AirFiber44,Fiber44sig],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
 
 
