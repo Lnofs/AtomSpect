@@ -314,8 +314,9 @@ if doHighTemp:
 #%%7.9eV
 if doLowTemp:
     import xarray as xr
-    
-    fil9 = f"{pathfil}/figure9.nc"
+    #Fiber44 of 20230215.015 available on Aurora dataset, publication states B = 2.51T, alpha = 71 deg, vi = 1km/s, ti = 17 eV
+
+    fil9 = f"{pathfil}/CIII_17eV.nc"
     
     # sys.path.append(pathfil)
     

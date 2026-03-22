@@ -96,7 +96,7 @@ CIII_PlotvarsH = [['green', 3, '-.','CIII']]
 
 #%%
 import xarray as xr
-fil9 = f"{pathfil}/figure9.nc" #Low Temp from Supra dataset.
+fil9 = f"{pathfil}/CIII_17eV.nc" #Low Temp from Supra dataset.
 
 # sys.path.append(pathfil)
 
