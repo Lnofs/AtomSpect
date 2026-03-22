@@ -1,10 +1,32 @@
+% What is AtomSpect?
+AtomSpect is a newly developed Python package designed for simplify the spectroscopic analysis for diagnostic purposes. It has been developed to be lightweight and easy to implement into any diagnostic pipepline - aided by being fully open source with GPL-3.0 licensing.
+
+AtomSpect is NOT intended to be a replacement for the robust ab-initio atomic structure calculations for energy levels. 
+
+% Installation
+Unzip.
 To use: Unzip the repository and open one of the example scripts in the examples folder. Run the example script.
 
-Further examples shall be added showing off some more of the features implemented but not utilized in some current examples.
-While HFS and Stark splitting functionality currently exists, the stark shift results are known incorrect and the HFS results have not been thoroughly tested against experimental results.
+(Add flowchart image here)
 
-I'd be glad to add any additional spectrometer data examples, especially any which show hyperfine splitting (either with or without an external field).
+Describe workflow with: Inputdict, Mainfunction, plotting
 
-I kindly request that any publications using this code provide credit to me and/or this code repository.
 
-If you wish to contact me: lmn0022@auburn.edu
+% Using AtomSpect
+
+%% Slider GUI!
+
+%% Input Dictionary Keys
+
+%% Plotfunction Flags
+
+
+% Future Developement
+
+% Data Use
+All data provided here is open source and free to use. Additional spectrometer data is always welcome.
+
+
+I kindly request that any works that utilize this code reference the AtomSpect publication:(doi goes here)
+
+Contact me at: lmn0022@auburn.edu
