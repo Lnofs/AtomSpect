@@ -4,14 +4,24 @@ AtomSpect is a newly developed Python package designed for simplify the spectros
 AtomSpect is NOT intended to be a replacement for the robust ab-initio atomic structure calculations for energy levels. 
 
 # Installation
-To use: Unzip the repository and open one of the example scripts in the examples folder. Run the example script, not AtomSpect.py
-
-(Add flowchart image here)
-
-Describe workflow with: Inputdict, Mainfunction, plotting
+To use: Unzip the repository and open one of the example scripts in the examples folder. Run the example script, not AtomSpect.py.
 
 
 # Using AtomSpect
+AtomSpect uses an Input Dictionary with several keyword arguments for the calculation. This includes a vast amount of optional keywords that can be passed. A full list and description of the keywords is provided below and in the function description for AtomSpect_Main.
+
+The InputDict can be passed to either: MakeSlider, plotZfan, or AtomSpect_Main. MakeSlider and plotZfan will directly generate plots from the input file.
+
+AtomSpect_Main outputs a dictionary with many results and intermediary steps. This output is passed into the PlotFunction to generate the plot. There are additional optional plot flags as well.
+PlotFunction requires a PlotObject and plot_vars. The PlotObject can be either the AtomSpect_Main output or a list of [wavelength,intensity].
+The PlotFunction is robust with a lot of optional arguments. It is an array of plot axes which can be addressed via index. This gives the flexability of a generalized 2D plot array. You can feed this axis, which is the output of PlotFunction into PlotFunction.
+
+In addition to the PlotObject, several plotting parameters are set with the plot_vars = [color, linewidth,linestyle, legendlabel, markerstyle(optional)]
+
+Image showing a very simple example of operation. Additional spectra can be added but ensure to set makefig=False and axisin=thisaxs (per the Argon example shown here).
+<img width="910" height="398" alt="image" src="https://github.com/user-attachments/assets/afda7519-e135-4097-90c4-ac3717eff447" />
+
+The versatility of the plotting function is showcased across several of the included examples.
 
 ## Slider GUI!
 An input dictionary can be fed into MakeSlider. Boolean flags exist for:
@@ -40,7 +50,7 @@ Max Value
 <img width="1549" height="948" alt="image" src="https://github.com/user-attachments/assets/566f9ece-7355-41d1-9492-0816b87c07d2" />
 
 ## Input Dictionary Keys
-InputdeckExample = {
+
                      's_ground': 3  , #Spin multiplicity for ground state ^(2s +1)L_J , int or half int
                      's_excited': 3 , #Spin multiplicity for excited state ^(2s +1)L_J, int or half int
                      'l_ground': 0  , #Orbital Angular Momentum of ground state, int or half int
@@ -78,10 +88,28 @@ InputdeckExample = {
                      'EtermE' : 191444.47832914, #Term energy of upper state in cm^-1 - Required for DoHighSig
                      'sortE' : True , #Bool as to whether the wavefunctions will attempt to be sorted based on expected resulting energy before diagonalization. This significantly slows down operations. 
                       }
-## Plotfunction Flags
+                      
 
+
+# Plotting Zfans
+AtomSpect can do typical Zeeman Fan plots with a dedicated set of functions which has been optimized for significant speed.
+Compared to a normal InputDictionary, 'Bmag' needs to be an array of magnetic field values. The flags refer to:
+"G" - Ground
+"E" - Excited
+"H" - Add High-field approximation. This requires Term Energy!
+"L" - Add Low-field approximation (no diagonalization)
+
+At least "G" or "E" are required, otherwise, any combination of the flags, in any order, may be passed into plotZfan.
+
+<img width="888" height="465" alt="image" src="https://github.com/user-attachments/assets/26f8bbbd-3fc0-449f-9250-d2a3c377518c" />
+
+<img width="443" height="361" alt="image" src="https://github.com/user-attachments/assets/cc4a162e-5524-4922-82e0-025ab29ecf32" />
 
 # Future Developement
+Stark Shift. Work is already well underway for implementing the DC stark shift for electric fields into the package.
+Hyperfine Constants. Preliminary work is done and results are sound, just need to simplify and streamline the calculation into AtomSpect_Main
+Importing/saving data. We plan to allow for importing of atomic energy level data such as from then Open ADAS work. This also includes building up a database of atoms and energies for quick use such that the user doesn't need to type in the details for every line they are interested. This goes great with the next feature...
+Fancy GUI! The Slider GUI is okay, but is unable to handle multiple species/lines. A robust GUI is in the initial stages of design which would transform everything about using AtomSpect.
 
 # Data Use
 All data provided here is open source and free to use. Additional spectrometer data is always welcome.
