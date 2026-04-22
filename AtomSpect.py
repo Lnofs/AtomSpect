@@ -2,6 +2,8 @@
 """
 AtomSpect main function definitions.
 @author: Leo Nofs
+This contains all of the functions for operating the code. This file is NOT run directly.
+
 """
 
 import numpy as np
@@ -42,7 +44,6 @@ hhev = 4.135668e-15  # Plank's constant in Ev/Hz
 muBEV = 5.7883818e-5  # bohr magneton in eV/Tesla
 muBcm = muBEV/(1.23981e-4)  # bohr magneton in cm^-1
 
-# specres = 10 #Number of points evalulated per pixel or function stepsize. 10 gives smoother curves for synthetic spectra vs spectrometer data
 
 
 # %%Lande Factors
@@ -265,6 +266,48 @@ def A_Ein(E_in, dipolesig):
    
     return tAein
 
+def A_Ein2(E_in, dipolesig):
+    '''
+    This is done explicitly as written without the change to the factoring.
+    Calculate the Einstein A coefficient using the dipole moment.
+    Bransden QM 
+    A_ab = (womega^3 * e*2)/(3\pi eps0hbar*c**3) * |<a|r|b>|^2
+
+    There is also the intensity expression from Bethe and Salpeter - 59.10
+    
+    I = (4 q^2 omega^4)/(3 c^3) |r|^2 - again pol and spacially averaged.
+    
+    Compare to 59.11 for Einstein A as
+    A = (4 q^2 omega^3)/(3 hbarc^3) |r|^2 - again pol and spacially averaged.
+    
+    These are in erg/sec units.
+    There is definitely interesting physics and math to discover in these relations
+    As well as why the expected expressions do not precisely yield the A coefficients.
+    What is the missing component, and what is my calulation from the dipolestr actually giving?
+    
+    
+    The e
+    Parameters
+    ----------
+    E_in : float
+        Energy in wavelength (nm) for the given line
+    dipolesig : float
+        Scalar of the dipole sig strength for the given transition.
+
+    Returns
+    -------
+    tAein : TYPE
+        DESCRIPTION.
+
+    '''
+ 
+    # omega = (Ea-Eb)/hbar
+    tomega = nm_to_Hz(E_in)*(2*np.pi) #Note also the
+    #This expression looks close to eq 4.119 in Bransden Atoms (Pg190/182)
+    tAein = 4*((tomega**3 * q_charge**2)/(np.pi*eps0*hbar*c_light**3)) * dipolesig  # Not exactly as given by papers, but works?
+   
+    return tAein
+
 # %%Plot
 
 
@@ -434,11 +477,14 @@ def consolidate_legend(tfig, plotpol=True, plotnondip=False, legcols=None, fonts
 def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlot=[], Shape=[1, 1],  
                  position=[0, 0], axsin=[], NormalizeSig=False, NormalizeScale=1, makefig=True,  
                  fig_size=(10, 8), plotpol=True, plotlabel='', plotnondip=False, dotwin=False,  
-                 marker=None, marker_count=None, fontsize=None, ScaleSpectrometer=None,  
+                 marker=None, marker_count=None, marker_size = None, fontsize=None, ScaleSpectrometer=None,  
                  SpectrometerLabel='Spectrometer', SpectrometerMarker=None, SpectrometerColor='black', 
                  SpectrometerLS='solid', legcols=None): 
          
     '''
+    Author note: This function was refactored by Gemini AI from a previous iteration. The changes add a pre-processing step
+    which helps generalize usage and make it easier to parse what the plot function is doing. This code has been reviewed prior to publication
+    
     Parameters
     ----------
     Plotobject : What is being plotted.
@@ -519,7 +565,8 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
     font_size = fontsize if fontsize else 18 
     markcount = marker_count if marker_count else 50
     spectrometer_scale = ScaleSpectrometer if ScaleSpectrometer else 1 
-     
+    marker_size_ = marker_size if marker_size else 10  
+    
     if len(np.shape(plot_vars)) == 1: 
         working_vars = [plot_vars] 
     else: 
@@ -584,7 +631,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
              
         target_axis.plot(tplot_data[0], y_data, color=p_vars[0], linestyle=p_vars[2],  
                          linewidth=p_vars[1], label=p_vars[3], alpha=0.8, 
-                         marker=resolved_markers[i], markevery=markcount, markersize=9) 
+                         marker=resolved_markers[i], markevery=markcount, markersize=marker_size_) 
 
     # --- 5. Styling and Limits --- 
     plottingwind = plotwind 
@@ -645,7 +692,7 @@ def Zslider(B, thisTemp, thisRes, Input):
     Input['specstep'] = thisRes
     Input['Temp'] = thisTemp*11602
 
-    return Zeeman_Main(Input)
+    return AtomSpect_Main(Input)
 
 
 def Zslider_Pol(B, thisTemp, thisRes, Bangle, PolAngle, Input):
@@ -666,7 +713,7 @@ def Zslider_Pol(B, thisTemp, thisRes, Bangle, PolAngle, Input):
     Input['Temp'] = thisTemp*11602
     Input['b_angle'] = Bangle
 
-    return Zeeman_Main(Input)
+    return AtomSpect_Main(Input)
 
 
 def enable_manual_input(fig, slider):
@@ -1380,13 +1427,14 @@ def Zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False):
     tsigout = np.array(signal_out)
     sigsum = np.sum(tsigout)
 
+    #But it doesn't seem like this actually changes the final spectra post normalization.
     sigout = np.array([x/sigsum for x in tsigout])  # Make it so that sum of intensities is 1.
     #This means we have an oscillator strength here.
     # Conver the output to wavelength in nm then account for shift from vacuum to air.
     wave_vac = np.array([1e7/(y-x) for y in LZE[0] for x in LZG[0]])
     wave_air = Vac_to_air(wave_vac)
 
-    return [sigout, wave_air, rad, bjlist, afcf, Signalcoeffa, wave_vac]
+    return [sigout, wave_air, rad, bjlist, afcf, Signalcoeffa, wave_vac,sigsum,tsigout]
 
 def Zeeman_sig_norad(LevelG, LZG, LevelE, LZE):
 
@@ -2235,7 +2283,7 @@ def plotZfan(Inputdeck, flags='', savefig=False, figname='placeholder',markercou
 # %%Main
 
 
-def Zeeman_Main(Inputdeck, **kwargs):
+def AtomSpect_Main(Inputdeck):
     '''
     This is the main zeeman function. THe input is a dictionary with many optional keywords for more modular functionaly. These optional keywords are checked for to branch the function.
 
@@ -2253,27 +2301,31 @@ def Zeeman_Main(Inputdeck, **kwargs):
                      'b_angle': 60 , #Angle between LoS and Bmax
                      'Pol_angle': 0 , #Angle polarizing filter makes with max linear transmission
                      'amu' : 183 , #Weight in AMU
-                     'Convfxn': 'Gaussian' , #Optional: 'Gaussian', 'GaussianInstrum'', 'Skewed' , 'Lorrentzian'. Future work will allow custom functions or modifying the skewed lorrentzian
+                     'Convfxn': 'Gaussian' , #Optional: 'Gaussian', 'GaussianInstrum'', 'Skewed' , 'Lorrentzian', 'Voigt'.
                      'Skewness' : [0.62,0.99] #Optional, [Left,Right] constant for the skewness of the lorrentzian function. Between 0 and 1. If both are 1, it is a normal lorrentzian.
                      'Temp' : 300, #Temperature in K. Used for Gaussian convolution
                      'specstep' : 0.002222 , #stepsize of linefunction [nm]
                      'specres' : 10 , #How many points are evaluated per spectrometer pixel window. Higher means smoother curve.
                      'fxnwindow': 0.5 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                      'plottitle': 'Excample Title' , #Title for plotting (optional).                      
+                     'SpectrumData' : [[Wavelength],[Intensity]] , #List of arrays for wavelength (nm) and intensity (arb)
                      'spec_window' : [425,435], #Min and max for convolution window (nm)
                      'plot_window' : [425,435], #Min and max for plot window range (nm)
-                     'HFS_G' : [505.5e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
+                     'HFS_G' : [505.5e6] , #Optional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                      'HFS_E': [0, 496.2e6, 440.5e6] , #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                      'I_spin' : 0.5, #Optional: nuclear spin, I. Tabulated by Stone et al.
                      'mu_I' :  .11778476 , #Optional: Nuclear dipole moment as tabulated by Stone.              
                      'HFSB_G' : [505.5e6] , #OPtional: Hyperfine B constant for the lower level, need one entry per J level, lowest J first [Hz]
                      'HFSB_E': [0, 496.2e6, 440.5e6] , #Optional: Hyperfine B constants for upper level, need one entery per J level, lowest J first [Hz]
                      'Calc_HFS_Vals': [False,False], #Optional. Passed regarding wether HFS constants A and B should be approximated for values of 0 above. NOT YET IMPLEMENTED
-                     'ion_vel'
-                     'PsiHFS'
+                     'ion_vel' : Float or [Float1,Float2] , #Velocity of particles, mono and bidirectional allowed. A single value can be passed and used for bidirectional splitting if bidir flag is set.
+                     'bidir' : True , #Bool as to whether ion motion generates bidirection doppler shift
+                     'PsiHFS' : True , #Bool, testing flag left in for completeness
                      'DoLowSig' : True , #Bool for whether Lowfield approximation and signal are included and plotted
-                     'DoHighSig' : True , #Bool for whether Highfield approximation and signal are included and plotted
-
+                     'DoHighSig' : True , #REQUIRES TERM ENERGY!Bool for whether Highfield approximation and signal are included and plotted
+                     'EtermG': 169086.9076, #Term energy of lower state in cm^-1 - Required for DoHighSig
+                     'EtermE' : 191444.47832914, #Term energy of upper state in cm^-1 - Required for DoHighSig
+                     'sortE' : True , #Bool as to whether the wavefunctions will attempt to be sorted based on expected resulting energy before diagonalization. This significantly slows down operations. 
                      }
 
     Returns
@@ -2293,8 +2345,6 @@ def Zeeman_Main(Inputdeck, **kwargs):
     Bfield_ext = Inputdeck['Bmag']
     Bext_angle = Inputdeck['b_angle']
 
-    for k, val in kwargs.items():
-        print('**kwargs not yet implemented')
 
     # Set polarization filter angle to 0 and define no polarization filter.
     Polangle = 0
@@ -2317,7 +2367,7 @@ def Zeeman_Main(Inputdeck, **kwargs):
         pass
     else:
         Inputdeck['amu'] = 1  # Setting a default value so it's not required to be input.
-
+        
     # 1. Establish the "Spectrometer" fallback range
     spec_data = Inputdeck.get('SpectrumData')
     # If data exists, use its bounds; otherwise, use the global default
@@ -2388,6 +2438,8 @@ def Zeeman_Main(Inputdeck, **kwargs):
         data['w3coeffs_ground'] = Ground_Level_HFS[0]
         data['w3coeffs_excited'] = Excited_Level_HFS[0]
         data['ZeemanSplits_G'] = Ground_Zeeman_HFS[-1]
+        data['Red_Dipole'] = Z_sig_HFS[4]
+
         data['rad'] = Z_sig_HFS[2]  # Given out so that it can be used to plot specific polarizations.
 
     # If there is no nuclear spin in the input deck, do a similar calculation but no hpyerfine splitting ins included nor nuclear zeeman splitting.
@@ -2430,6 +2482,7 @@ def Zeeman_Main(Inputdeck, **kwargs):
                 Excited_Zeeman_High = Zeeman_func(Excited_Level, Bfield_ext, Highfield=True,Eterm=EtermE)
                 Z_sig_High = Zeeman_signal(Ground_Level, Ground_Zeeman_High, Excited_Level, Excited_Zeeman_High, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter)
                 # Z_sig_Low = Zeemansig_Low(Ground_Level,Excited_Level,Bangle=Bext_angle,gamma=Polangle, Filter=Polfilter)
+
                 data['signal_high'] = Z_sig_High[0]
                 data['wave_vac_high'] = Z_sig_High[6]
                 data['wave_air_high'] = Z_sig_High[1]
@@ -2439,6 +2492,9 @@ def Zeeman_Main(Inputdeck, **kwargs):
         data['EigExcited'] = Excited_Zeeman
         data['ZeemanSplits_G'] = Ground_Zeeman[-1]
 
+
+        data['sigsum'] = Z_sig[7]
+        data['SigNotNorm'] = Z_sig[8]
         data['bigstatelist'] = Z_sig[3]
         data['signal'] = Z_sig[0]
         data['wave_vac'] = Z_sig[6]
@@ -2450,13 +2506,16 @@ def Zeeman_Main(Inputdeck, **kwargs):
         data['E0_Ground'] = Ground_Level[3]
         data['E0_Excited'] = Excited_Level[3]
 
-        data['RedDipoleOp'] = Z_sig[-3]
         data['rad'] = Z_sig[2]
         data['Zsig_norad'] = Z_sig_norad
-        # A_Ein isn't polarization normalized, A_Ein2 is the typical polarization normalized expression.
+        # A_Ein isn't polarization normalized,
         data['A_Ein'] = [A_Ein(data['wave_air'][i], dips)/(2*data['bigstatelist'][i][1][0] + 1) for i, dips in enumerate(data['signal'])]
         data['A_Ein_polavg'] = [2*A_Ein(data['wave_air'][i], dips)/(3*(2*data['bigstatelist'][i][1][0] + 1)) for i, dips in enumerate(data['Zsig_norad'])]
+        
+        data['sigavgs'] = [sigs/(2*data['bigstatelist'][i][1][0] +1) for i,sigs in enumerate(data['signal']) ]
 
+        data['f_osc'] = np.sum(data['signal'])*m_elec/(4*hbar*(np.pi**3))*((2*L_ground+1)/(2*L_excited+1))
+        data['S_line'] = np.sqrt(np.sum([(3 /(16*q_charge*np.pi**4*nm_to_Hz(x)))*data['signal'][i] for i,x in enumerate(data['wave_vac'])]))*((L_ground+1)/(2*L_excited+1))
         data['afcf'] = Z_sig[4]
 
     # There are several instrument functions available for convolution. Lorrentzian, Skewed Lorrentzian, Doppler, and DopplerInstrum, which is a combination of a doppler and instrument (not a Pseudo Voigt though.)
@@ -2475,9 +2534,14 @@ def Zeeman_Main(Inputdeck, **kwargs):
         if 'specstep' in Inputdeck:
             stepsize = Inputdeck['specstep']
         else:
-            stepsize = 0.002
+            stepsize = 0.002 #Set a default step size 
         if Inputdeck['Convfxn'] == 'Gaussian' or Inputdeck['Convfxn'] == 'GaussianInstrum':
-            convtemp = Inputdeck['Temp']
+            #Requires Input Temperature for non Lorrentzian lineshapes
+            if 'TempeV' in Inputdeck: #Allow for temp to be input in eV as well.
+                convtemp = Inputdeck['TempeV']*11602 
+            else:               
+                convtemp = Inputdeck['Temp']
+                
             SkewedConstants = [1, 1]
 
         if Inputdeck['Convfxn'] == 'Skewed' or Inputdeck['Convfxn'] == 'Lorrentzian':
@@ -2487,7 +2551,10 @@ def Zeeman_Main(Inputdeck, **kwargs):
             else:
                 SkewedConstants = [1, 1]
         if Inputdeck['Convfxn'] == 'Voigt':
-            convtemp = Inputdeck['Temp']
+            if 'TempeV' in Inputdeck: #Allow for temp to be input in eV as well.
+                convtemp = Inputdeck['TempeV']*11602 
+            else:               
+                convtemp = Inputdeck['Temp']
 
         if 'fxnwindow' in Inputdeck:
             fxnwindow = Inputdeck['fxnwindow']
@@ -2636,6 +2703,8 @@ def Convol_Sticks(x0, xwind, Temp_in, amu_in, stepsize_nm, function="", Skew_con
     return [waveout, np.array(specout)]
 
 def make_stickbins(sticks_in, *data_arrays, windsize=.1):
+    #This function does the dynamical windowing that allows for the fast optimization. It makes the bins of "nearby" signal sticks
+    #And convolution only takes place in these windows. 
     wavered = sticks_in
     min0, max0 = np.min(wavered), np.max(wavered)
     tlen = len(wavered)

@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from matplotlib import ticker
 #This adds the directy two folders up from the example file so taht the main module can be imported.
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
-from AtomSpect  import Zeeman_Main, Normalize,PlotFunction,read_Spectra, plotZfan,Convol_Sticks, make_stickbins,MakeSlider, ZeemanFan
+from AtomSpect  import AtomSpect_Main, Normalize,PlotFunction,read_Spectra, plotZfan,Convol_Sticks, make_stickbins,MakeSlider, ZeemanFan
 
 doRBfans=0
 savefigs=1
@@ -136,10 +136,10 @@ Rb_PlotVars2=[['blue', 1.5, '-.',f'B = 2T - HFS' ,'P']]
 Rb_PlotVars2.append(['maroon', 1.5, ':',f'B = 2T - No HFS'  , 's'])
 
 
-Rb_I = Zeeman_Main(InputRb)
-Rb_noHFS = Zeeman_Main(InputRb_noHFS)
-Rb_I2 = Zeeman_Main(InputRb2)
-Rb_noHFS2 = Zeeman_Main(InputRb_noHFS2)
+Rb_I = AtomSpect_Main(InputRb)
+Rb_noHFS = AtomSpect_Main(InputRb_noHFS)
+Rb_I2 = AtomSpect_Main(InputRb2)
+Rb_noHFS2 = AtomSpect_Main(InputRb_noHFS2)
 
 
 #This plots my results and sticks, gaussian convolution, including the ion velocity.

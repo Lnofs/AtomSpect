@@ -3,6 +3,9 @@
 Created on Mon Jul 15 17:08:11 2024
 
 @author: Leo Nofs
+
+Data from the Aurora public data set http://dx.doi.org/10.35099/aurora-701
+
 """
 
 import csv, os, sys
@@ -12,7 +15,7 @@ from matplotlib import pyplot as plt
 
 #This is the base folder of the main function. Can be excluded if data files are in the same location as the 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
-from AtomSpect  import Zeeman_Main, Normalize,PlotFunction,Vac_to_air, Convol_Spect, MultiSpec
+from AtomSpect  import AtomSpect_Main, Normalize,PlotFunction,Vac_to_air, Convol_Spect, MultiSpec
 
 pathfil = os.getcwd()
 
@@ -21,11 +24,10 @@ pathfil = os.getcwd()
 sys.path.append(pathfil)
 
 
-# CIIISpec = np.load('CIII_2.21T_7.9ev.npy') #This is the spectrometer data
 
 savedpi = 144
 savefigs = 1
-doHighTemp = 0
+doHighTemp = 1
 doCombSpec = 1
 doConvComp = 0
 doLowTemp =1
@@ -33,10 +35,7 @@ do_title = 0
 do_sticks=1
 #Convert the spectrometer data from vacuum to air wavelengths
 
-#7.9eV can match with LoS - 50, T=7.2eV, res = 0.0075 nm, 2.21T 
 
-#7.9eV can match with LoS - 50.5, T=7.91eV, res = 0.0075 nm, 2.26T 
-# Temperature = 7.9#Temp in eV
 
 
 #%%28.1eV
@@ -95,8 +94,8 @@ if doHighTemp:
     
     
     
-    CIII_4649 = Zeeman_Main(InputdeckCIII_4649) #Gaussian Instrum
-    CIII_4649B = Zeeman_Main(InputdeckCIII_4649B) #Gaussian Only
+    CIII_4649 = AtomSpect_Main(InputdeckCIII_4649) #Gaussian Instrum
+    CIII_4649B = AtomSpect_Main(InputdeckCIII_4649B) #Gaussian Only
     
         
 
@@ -226,10 +225,10 @@ if doHighTemp:
      
     
     
-        OII_465 = Zeeman_Main(InputdeckOII)
-        OIII_465 = Zeeman_Main(InputdeckOIII)
+        OII_465 = AtomSpect_Main(InputdeckOII)
+        OIII_465 = AtomSpect_Main(InputdeckOIII)
     
-        CIII_4663 = Zeeman_Main(InputdeckCIII_4663)
+        CIII_4663 = AtomSpect_Main(InputdeckCIII_4663)
     
         
         
@@ -265,11 +264,11 @@ if doHighTemp:
         # axslines.vlines(OII_465['wave_air'], np.zeros_like(OII_465['signal']),scalers[2]*OII_465['signal'],color='maroon', label='OII, f=0.025 ')
         # axslines.vlines(OIII_465['wave_air'], np.zeros_like(OIII_465['signal']),scalers[3]*OIII_465['signal'],color='blue', label='OIII, f= 0.02')
         axslines.set_ylim(-0.1*np.max(CIII_4649['reduced_sticks'][1]),np.max(CIII_4649['reduced_sticks'][1]))
-        axslines.stem(CIII_4649['wave_air'], CIII_4649['signal'], linefmt='C4', markerfmt='+', basefmt=" ",label='CIII 4649')
-        axslines.stem(CIII_4663['wave_air'],scalers[1]*CIII_4663['signal'],linefmt='C1', markerfmt='D', basefmt=" ", label='CIII 4663, f=0.1')
-    
-        axslines.stem(OII_465['wave_air'], scalers[2]*OII_465['signal'],linefmt='C2', markerfmt='x', basefmt=" ", label='OII, f=0.025 ')
-        axslines.stem(OIII_465['wave_air'], scalers[3]*OIII_465['signal'], linefmt='C3', markerfmt='o', basefmt=" ",label='OIII, f= 0.02')
+        axslines.stem(CIII_4649['wave_air'], CIII_4649['signal'], linefmt='C4', markerfmt='+', basefmt=" ",label='CIII 464.9')
+        
+        axslines.stem(CIII_4663['wave_air'],scalers[1]*CIII_4663['signal'],linefmt='C1', markerfmt='D', basefmt=" ", label=f'CIII 466.3, f={scalers[1]}')
+        axslines.stem(OII_465['wave_air'], scalers[2]*OII_465['signal'],linefmt='C2', markerfmt='x', basefmt=" ", label=f'OII, f={scalers[2]} ')
+        axslines.stem(OIII_465['wave_air'], scalers[3]*OIII_465['signal'], linefmt='C3', markerfmt='o', basefmt=" ",label=f'OIII, f={scalers[3]}')
         axslines.set_ylim(-0.1*np.max(CIII_4649['reduced_sticks'][1]),np.max(CIII_4649['reduced_sticks'][1]))
     
         axs.plot(Combspec[0][0], Normcombsig, label='Combined CIII + OII lines', marker='D',linewidth = 2, markersize = 5, markevery=2)
@@ -356,7 +355,7 @@ if doLowTemp:
  
                        
                     }
-    CIII_4649L = Zeeman_Main(InputdeckCIII_4649L) #Gaussian Instrum
+    CIII_4649L = AtomSpect_Main(InputdeckCIII_4649L) #Gaussian Instrum
 
     if doCombSpec:
         # plt.close('all')
@@ -427,17 +426,15 @@ if doLowTemp:
      
     
     
-        OII_465 = Zeeman_Main(InputdeckOII)
-        OIII_465 = Zeeman_Main(InputdeckOIII)
+        OII_465 = AtomSpect_Main(InputdeckOII)
+        OIII_465 = AtomSpect_Main(InputdeckOIII)
     
-        CIII_4663 = Zeeman_Main(InputdeckCIII_4663)
+        CIII_4663 = AtomSpect_Main(InputdeckCIII_4663)
     
         
         
-        #Trying a rough attempt at adding two different lines together before convolution (no padspec this time)
         
         plt.close('all')
-        #To have 28 eV CII, lets think about the required energy
         
         multispecs = [CIII_4649L,CIII_4663,OII_465,OIII_465]
         #This allows for scaling of the differeint possible contributions.
@@ -445,7 +442,7 @@ if doLowTemp:
         temp_list = np.array([thisTempL,])*11602
         
         combspect = MultiSpec(multispecs,scalers)
-        #Unfortunately, all included atoms will have the same temp, velocity, and mass currently.
+        
         Combspec = Convol_Spect(combspect[0],combspect[1], [462,470],[464.5,465.5], combspect[3], 0.035,Temperature_in=combspect[2],
                                   functiontype = "GaussianInstrum", wind_size = 1, ionvel=1000)
         
@@ -462,8 +459,8 @@ if doLowTemp:
         axslines = axs.twinx()
     
         axslines.set_ylim(-0.1*np.max(CIII_4649L['reduced_sticks'][1]),np.max(CIII_4649L['reduced_sticks'][1]))
-        axslines.stem(CIII_4649L['wave_air'], CIII_4649L['signal'], linefmt='C4', markerfmt='+', basefmt=" ",label='CIII 4649')
-        axslines.stem(CIII_4663['wave_air'],scalers[1]*CIII_4663['signal'],linefmt='C1', markerfmt='D', basefmt=" ", label=f'CIII 4663, f={scalers[1]}')
+        axslines.stem(CIII_4649L['wave_air'], CIII_4649L['signal'], linefmt='C4', markerfmt='+', basefmt=" ",label='CIII 464.9')
+        axslines.stem(CIII_4663['wave_air'],scalers[1]*CIII_4663['signal'],linefmt='C1', markerfmt='D', basefmt=" ", label=f'CIII 466.3, f={scalers[1]}')
     
         axslines.stem(OII_465['wave_air'], scalers[2]*OII_465['signal'],linefmt='C2', markerfmt='x', basefmt=" ", label=f'OII, f={scalers[2]} ')
         axslines.stem(OIII_465['wave_air'], scalers[3]*OIII_465['signal'], linefmt='C3', markerfmt='o', basefmt=" ",label=f'OIII, f={scalers[3]}')

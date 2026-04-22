@@ -5,7 +5,7 @@ Created on Wed Aug 17 10:06:38 2024
 @author: Leo Nofs
 This code demonstrates using sliders to predict what the spectrometer might see.
 
-
+Also showcases using the slider and different data formats.
 """
 
 import csv, os, sys
@@ -14,13 +14,12 @@ from matplotlib import pyplot as plt
 
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
-from AtomSpect  import Zeeman_Main, Normalize,PlotFunction,read_Spectra, plotZfan,Convol_Sticks, make_stickbins,MakeSlider, ZeemanFan,Vac_to_air
+from AtomSpect  import AtomSpect_Main, Normalize,PlotFunction,read_Spectra, plotZfan,Convol_Sticks, make_stickbins,MakeSlider, ZeemanFan,Vac_to_air
 
 
 pathfil = os.getcwd()
 
 
-dpival = 800
 
 
 
@@ -82,7 +81,7 @@ InputdeckCIII_4649 = {'s_ground':1 ,#Spin multiplicity,s, for ground state ^(2s 
                       
                    }
 #
-CIII_Z = Zeeman_Main(InputdeckCIII_4649)
+CIII_Z = AtomSpect_Main(InputdeckCIII_4649)
 
 
                

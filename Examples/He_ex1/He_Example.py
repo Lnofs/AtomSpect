@@ -14,7 +14,7 @@ import matplotlib
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
 
-from AtomSpect import Zeeman_Main, Normalize, PlotFunction, read_Spectra,  MakeSlider,  plotZfan, Savenpy_Dict, Loadnpy_Dict
+from AtomSpect import AtomSpect_Main, Normalize, PlotFunction, read_Spectra,  MakeSlider,  plotZfan, Savenpy_Dict, Loadnpy_Dict
 
 
 # Flags for doing polarized or not
@@ -81,7 +81,7 @@ if doHePol2 == True:
 
                           }
 
-        HePol = Zeeman_Main(InputdeckHePol)
+        HePol = AtomSpect_Main(InputdeckHePol)
         HePol_PlotObj = ['royalblue', 2.0, 'solid', 'Intermediate']
 
         if i == 0:
@@ -161,7 +161,7 @@ if doHePol == True:
 
                           }
 
-        HePol = Zeeman_Main(InputdeckHePol)
+        HePol = AtomSpect_Main(InputdeckHePol)
         HePol_PlotObj = ['royalblue', 2.5, 'solid', 'Intermediate']
 
         if i == 0:  # In the future, automate this process of the plotting.
@@ -224,7 +224,7 @@ if doHeNonPol == True:
 
 
                              }
-        HeNonPol = Zeeman_Main(InputdeckHeNonPol)
+        HeNonPol = AtomSpect_Main(InputdeckHeNonPol)
 
         colorlist = ['royalblue', 'g', 'r', 'brown', 'm', 'c', 'y', 'black', 'seagreen']
         HeNonPol_PlotVar = [] 
@@ -296,7 +296,7 @@ if doHeNonPol2 == True:
                              # 'DoHighSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated.
                              'sortE': True ,
                              }
-        HeNonPol2 = Zeeman_Main(InputdeckHeNonPol2)
+        HeNonPol2 = AtomSpect_Main(InputdeckHeNonPol2)
 
         colorlist = ['royalblue', 'g', 'r', 'brown', 'm', 'c', 'y', 'black', 'seagreen']
         HeNonPol_PlotVar= ['royalblue', 2.5, 'solid', 'Intermediate']
@@ -354,7 +354,7 @@ if doHeNonPol3 == True:
                       # 'DoHighSig': 'Y',  # If this exists in the input, highfield signal strength will be calculated.
 
                       }
-    HeNonPol3 = Zeeman_Main(InputdeckHeNonPol3)
+    HeNonPol3 = AtomSpect_Main(InputdeckHeNonPol3)
     
     colorlist = ['royalblue', 'g', 'r', 'brown', 'm', 'c', 'y', 'black', 'seagreen']
     
@@ -405,7 +405,7 @@ if fanplot == True:
 
                          }
     
-    # HeB0 = Zeeman_Main(InputdeckHeNonPolFan)
+    # HeB0 = AtomSpect_Main(InputdeckHeNonPolFan)
     InputdeckHeNonPolFan['Bmag'] = np.linspace(0, 5, 1000)
     # Brange = np.linspace(0, 5, 100)
     flags = 'HGL'

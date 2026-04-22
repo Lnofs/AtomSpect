@@ -7,10 +7,10 @@
 import  os, sys
 import numpy as np
 from matplotlib import pyplot as plt
-
+from brokenaxes import brokenaxes #This is only for adding a break in the axes to remove "dead space"
 #This adds the directy two folders up from the example file so taht the main module can be imported.
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
-from AtomSpect import Zeeman_Main, Normalize,Normalize,PlotFunction,read_Spectra , plotZfan,parse_plot_data
+from AtomSpect import AtomSpect_Main,PlotFunction,read_Spectra , plotZfan ,plotarray
 
 
 
@@ -31,7 +31,12 @@ shiftedAr = [x + (5-.3 -34*.002222) for x in Ar_Spec['wavelength'] ]  #Shifting 
 savefigs = 1
 doAllB = 0 #Just the 750.4 nm line
 
-doAllB2 = 1 #Both the 750.4 and 751.4 nm lines
+doAllB2 = 0 #Both the 750.4 and 751.4 nm lines
+
+
+
+
+
 
 if doAllB:
     plt.close('all')
@@ -60,7 +65,7 @@ if doAllB:
         
     
         
-        Ar1 = Zeeman_Main(InputdeckAr1)    
+        Ar1 = AtomSpect_Main(InputdeckAr1)    
         
         plotvars = ['royalblue', 1.5, 'solid', 'Exact']
         taxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True, plotlabel=f'B={Bvals}T')
@@ -138,7 +143,7 @@ if doAllB2:
                        }
        
     
-        Ar1 = Zeeman_Main(InputdeckAr1)    
+        Ar1 = AtomSpect_Main(InputdeckAr1)    
         
         plotvars = ['royalblue', 1.5, 'solid', '750.4 nm - Int']
         plotvars1L = ['purple', 1, '-.', '750.4 nm - Weak', 'X']
@@ -151,7 +156,7 @@ if doAllB2:
         
         PlotFunction(Ar1['SpecOutLow'], plotvars1L, NormalizeSig=True, makefig=0, plotwind=[750.25,751.6],
                       axsin = taxs, plotpol=0)           
-        Ar2 = Zeeman_Main(InputdeckAr2)    
+        Ar2 = AtomSpect_Main(InputdeckAr2)    
         
         plotvars2 = ['orange', 1, '-.', '751.4 nm - Int', 's']
         
@@ -184,7 +189,7 @@ if doAllB2:
 
 
 #%%TestingCombinedPlot for paper. The idea being to put both magnetic fields on the same plot, and have both transitions then.
-doComboPlot =0
+doComboPlot =1
 # savefigs=1
 if doComboPlot:
     plt.close('all')
@@ -243,23 +248,24 @@ if doComboPlot:
                       # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
                        }
        
-        Ar1 = Zeeman_Main(InputdeckAr1)    
+        Ar1 = AtomSpect_Main(InputdeckAr1)    
         plotvars = ['royalblue', 1, 'solid', '750.4nm']
+        
         if taxs is not None:
-            PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=0,SpectrometerLS='dashed', axsin=taxs,position=[i,0], SpectrometerMarker = 'D', plotpol=0)#, plotlabel=f'B={2.21}T')
+            PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=0,SpectrometerLS='dashed', axsin=taxs,position=[i,0], SpectrometerMarker = 'D', plotpol=0,marker_size=6)#, plotlabel=f'B={2.21}T')
             # PlotFunction(Ar1['SpecOutHigh'], ['red',1,'dotted', '750.4 nm - Strong','o'], NormalizeSig=0, makefig=0, axsin=taxs,position=[i,0], plotpol=0)#, plotlabel=f'B={2.21}T')
 
         else:
-            taxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True,Shape = (2,1),SpectrometerLS='dashed', SpectrometerMarker = 'D', plotpol=0)#, plotlabel=f'B={2.21}T')
+            taxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True,Shape = (2,1),SpectrometerLS='dashed', SpectrometerMarker = 'D', plotpol=0,fig_size=(14,12),marker_size=6)#, plotlabel=f'B={2.21}T')
             # PlotFunction(Ar1['SpecOutHigh'], ['red',1,'dotted', '750.4 nm - Strong','o'], NormalizeSig=0, makefig=0, axsin=taxs,position=[i,0], plotpol=0)#, plotlabel=f'B={2.21}T')
 
         
     
-        Ar2 = Zeeman_Main(InputdeckAr2)
-        plotvars2 = ['orange', 1, '-.', '751.4 nm', 's']
+        Ar2 = AtomSpect_Main(InputdeckAr2)
+        plotvars2 = ['red', 1, '-.', '751.4 nm', 's']
     
         PlotFunction(Ar2, plotvars2, NormalizeSig=True, makefig=0,SpectrometerLS='dotted', NormalizeScale = np.max(Ar_Spec['signals'][SpecLoc[i]][690:]),
-                     axsin = taxs,position=[i,0], SpectrometerMarker = 'X', plotpol=0 ,  legcols=3)
+                     axsin = taxs,position=[i,0], SpectrometerMarker = 'X', plotpol=0 ,  legcols=3,marker_size=6)
             
             
         # PlotFunction(Ar2['SpecOutLow'], ['magenta',1,'dotted', '751.4 nm - Low','o'], NormalizeSig=True, makefig=0,SpectrometerLS='dotted', NormalizeScale = np.max(Ar_Spec['signals'][SpecLoc[i]][690:]),

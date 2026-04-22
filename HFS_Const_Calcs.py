@@ -295,7 +295,7 @@ def A_Bransden(Z,n,ndef,muI,I,MnucAMU,l,j,Za=1):
 
 def Qdefect(E_term,n1,Za = 1,E_ryd = hcRyd):
     #Solves E_b = Eo Za**2 /(n- sigma)**2 for sigma and n*, where n* = n-sigma, E_b = E_ionize - E_Term
-    #THe relation between Ionization energy and use in quantum defects needs more work.
+    #The relation between Ionization energy and use in quantum defects needs more work.
     n_star = np.sqrt(E_ryd*Za*Za/(E_term))
     qdef = n1 - n_star
     return [n_star,qdef]
