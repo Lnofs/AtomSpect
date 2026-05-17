@@ -11,6 +11,7 @@ To use: Unzip the repository and open one of the example scripts in the examples
 AtomSpect uses an Input Dictionary with several keyword arguments for the calculation. This includes a vast amount of optional keywords that can be passed. A full list and description of the keywords is provided below and in the function description for AtomSpect_Main.
 
 The InputDict can be passed to either: MakeSlider, plotZfan, or AtomSpect_Main. MakeSlider and plotZfan will directly generate plots from the input file.
+
 <img width="631" height="345" alt="image" src="https://github.com/user-attachments/assets/bdba6c53-4c9c-4437-a047-57d94de96b71" />
 
 AtomSpect_Main outputs a dictionary with many results and intermediary steps. This output is passed into the PlotFunction to generate the plot. There are additional optional plot flags as well.
