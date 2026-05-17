@@ -10,15 +10,15 @@ import os
 import sys
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib
+
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
 
-from AtomSpect import AtomSpect_Main, Normalize, PlotFunction, read_Spectra,  MakeSlider,  plotZfan, Savenpy_Dict, Loadnpy_Dict
+from AtomSpect import AtomSpect_Main, Normalize, PlotFunction, read_Spectra,  MakeSlider,  plotZfan
 
 
 # Flags for doing polarized or not
-doHePol = 0  # Shows all pols - inability to remove all of one pol
+doHePol = 1  # Shows all pols - inability to remove all of one pol
 doHePol2 = 0 # Shows non-dipole component and inability to fully filter polarizations (Paschen Back)
 
 doHeNonPol = 1 # Shows multiple B fields with all three regimes
@@ -414,18 +414,18 @@ if fanplot == True:
     plt.show()
     # plt.tight_layout()
     if savepdf:
-        plt.savefig(f'He_Fan.pdf', format='pdf')
+        plt.savefig('He_Fan.pdf', format='pdf')
     if savepng:
-        plt.savefig(f'He_Fan.png', dpi=savedpi)
+        plt.savefig('He_Fan.png', dpi=savedpi)
     flags_ = 'G'
     Zfantest = plotZfan(InputdeckHeNonPolFan, flags=flags_,markercount = 0)
     # plt.xlim(0,1)
     plt.show()
     # plt.tight_layout()
     if savepdf:
-        plt.savefig(f'He_Fan_Int.pdf', format='pdf')
+        plt.savefig('He_Fan_Int.pdf', format='pdf')
     if savepng:
-        plt.savefig(f'He_Fan_Int.png', dpi=savedpi)
+        plt.savefig('He_Fan_Int.png', dpi=savedpi)
         
         #%%
 # fanplot2 = 1
@@ -465,9 +465,9 @@ if fanplot2 == True:
     # plt.ylim(169083.4, 169090)
     savepdf=1
     if savepdf:
-        plt.savefig(f'He_FanE.pdf',format='pdf')
+        plt.savefig('He_FanE.pdf',format='pdf')
     if savepng:
-        plt.savefig(f'He_FanE.png', dpi=savedpi)
+        plt.savefig('He_FanE.png', dpi=savedpi)
 
 #%%
 

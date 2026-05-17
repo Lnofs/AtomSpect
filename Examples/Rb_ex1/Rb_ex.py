@@ -172,8 +172,10 @@ if savefigs:
     plt.savefig('RbSpec0T2T.pdf', dpi = savdpi)
 #%%   
 if doRBfans:
-    Bfan = np.linspace(0,1,5000)
     Bfan2 = np.linspace(0,.025,15000)
+
+    
+    Bfan = np.linspace(0,1,5000)
     InputdeckRbHFS_fan = {'s_ground':.5 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
                       's_excited':.5 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
                       'l_ground': 0 , #Orbital Angular Momentum of ground state, int or half int
@@ -185,21 +187,12 @@ if doRBfans:
                       'plottitle':'Rb85, I = 5/2, S = 1/2, L = 1' , #Title for plotting (optional)     
                       'plot_window' : [775,799] , #Min and max for plot window range (nm)
                       'amu' : 85 ,  #Weight in AMU
-                      # 'specstep' : 0.002222 , #Resolution of spectrometer in nm
-                      # 'Convfxn' : 'Skewed' ,
                       'Temp' : 300,
-                      # 'HFS_G' : [0]  , #Optional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
-                      # 'HFS_E': [0,0], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                       'HFS_G' : [1011e6]  , #Optional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                       'HFS_E': [120.527e6, 25.0354e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
-                      # 'HFS_E': [25e6, 120.527e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
-    
                       'HFSB_E': [0,25.898e6] ,
                       'I_spin' : 5/2, #Optional: nuclear spin, I, including parity. Tabulated by Stone et al.
                       'mu_I' :  1.35298, #Optional: Nuclear dipole moment as tabulated by Stone.             
-                      # 'PsiHFS': True, 
-                      # 'sortE' : True , 
-    
                        }
 
     # InputRb['Bmag'] = Bfan

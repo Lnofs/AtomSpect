@@ -6,6 +6,12 @@ Created on Mon Jul 15 17:08:11 2024
 
 Data from the Aurora public data set http://dx.doi.org/10.35099/aurora-701
 
+The high temperature data was saved using np.save, so the example shows loading such a spectra.
+The low temperature spectra is pulled directly from the .nc files from the public data set.
+These were encoded using netCDF4 and was opened using a combination of the xarray and h5netcdf python packages.
+xarray and h5netcdf are both third-party packages, so while that workflow is included, it is wrapped in
+a try/except that falls back to just loading the .csv file of the same spectrometer data.
+
 """
 
 import csv, os, sys
@@ -15,7 +21,8 @@ from matplotlib import pyplot as plt
 
 #This is the base folder of the main function. Can be excluded if data files are in the same location as the 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
-from AtomSpect  import AtomSpect_Main, Normalize,PlotFunction,Vac_to_air, Convol_Spect, MultiSpec
+from AtomSpect  import AtomSpect_Main, Normalize,PlotFunction,Vac_to_air, Convol_Spect, MultiSpec, read_Spectra
+
 
 pathfil = os.getcwd()
 
@@ -26,7 +33,7 @@ sys.path.append(pathfil)
 
 
 savedpi = 144
-savefigs = 1
+savefigs = 0
 doHighTemp = 1
 doCombSpec = 1
 doConvComp = 0
@@ -41,7 +48,7 @@ do_sticks=1
 #%%28.1eV
 if doHighTemp:
     # plt.close('all')
-    CIIISpec = np.load('CIII_2.24T.npy') #This is the spectrometer data
+    CIIISpec = np.load('CIII_2.24T.npy') #This is the spectrometer data, saved via np.save
     CIII_wav = [Vac_to_air(x) for x in CIIISpec[0]]
     Los_Angle = 68#Theta angle of LoS in degrees
     Temperature = 28.1#Temp in eV
@@ -298,7 +305,7 @@ if doHighTemp:
         # plt.rcParams['figure.figsize'] = [10,10]
  
         unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-        tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .95), loc='outside center', ncol=4, fontsize=18)
+        tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .99), loc='upper center', ncol=4, fontsize=18)
         plt.tight_layout(rect=[0, 0, 1, 0.92])
         plt.subplots_adjust(hspace=0, wspace=0)
         if savefigs:
@@ -312,22 +319,55 @@ if doHighTemp:
 
 #%%7.9eV
 if doLowTemp:
-    import xarray as xr
-    #Fiber44 of 20230215.015 available on Aurora dataset, publication states B = 2.51T, alpha = 71 deg, vi = 1km/s, ti = 17 eV
+    #This low temperature example can use either the non-standard package xarray for cdf data format.
+    #Alternatively, the same data has been included as a .csv file.
+    
+    
+    try:
+        import xarray as xr
+        #Fiber44 of 20230215.015 available on Aurora dataset, publication states B = 2.51T, alpha = 71 deg, vi = 1km/s, ti = 17 eV
+        #To read this file you need to install the h5netcdf python package.
+        fil9 = f"{pathfil}/CIII_17eV.nc"
+        
+        # sys.path.append(pathfil)
+        
+        
+        # fig1 = xr.open_dataset(fil, engine="h5netcdf")
+        fig9 = xr.open_dataset(fil9, engine="h5netcdf")
+        
+        #Fiber44 of 20230215.015 available on Aurora dataset, publication states B = 2.51T, alpha = 71 deg, vi = 1km/s, ti = 17 eV
+        CIIISpecL = fig9['spectrum_data'].values[1]
+        Fiber44wav = fig9['spectrum_data']['wavelength'].values[1]
+        CIII_wavL = [Vac_to_air(x) for x in Fiber44wav]
 
-    fil9 = f"{pathfil}/CIII_17eV.nc"
+        # #This block was used to take the cdf file and convert it into a .csv file.
+        # #While a little a-typical, this method uses csv.DictWriter for a list of dictionary entries.
+        # #There are definitely a large number of ways this can be achieved.
+        
+        # CIII_Ldat = [{'wavelength' :a , 'signals' : b} for a,b in zip(CIII_wavL,CIIISpecL)]
+        
+        # with open('CIII_17eV.csv', mode='w', newline='') as readme:
+        #     fieldnames = CIII_Ldat[0].keys()
+            
+        #     writer = csv.DictWriter(readme, fieldnames = fieldnames)
+        #     writer.writeheader()
+        #     for things in CIII_Ldat:
+        #         try:
+        #             trow = {k: v for k, v in things.items()}
+        #             writer.writerow(trow)
+        #         except:
+        #             pass
+    except:
+        #Since xarray and h5netcdf are non-standard python packages, have fall back to using the .csv file instead.
+        #The attempt to use the cdf file is kept to show an example doing so in case the user encounters that need.
+        pathfil = os.getcwd()
+        filname = '/CIII_17eV.csv' #There are multiple magnetic field values in this file which will be split and parsed using read_Spectra utility.
+        fil = pathfil + filname
     
-    # sys.path.append(pathfil)
-    
-    
-    # fig1 = xr.open_dataset(fil, engine="h5netcdf")
-    fig9 = xr.open_dataset(fil9, engine="h5netcdf")
-    
-    #Fiber44 of 20230215.015 available on Aurora dataset, publication states B = 2.51T, alpha = 71 deg, vi = 1km/s, ti = 17 eV
-    CIIISpec = fig9['spectrum_data'].values[1]
-    Fiber44wav = fig9['spectrum_data']['wavelength'].values[1]
-    CIII_wav = [Vac_to_air(x) for x in Fiber44wav]
-
+        #Import and process the spectral data
+        Spec_Raw = read_Spectra(fil, headercount=1, keepheaders=False)
+        CIIISpecL= Spec_Raw['signals']
+        CIII_wavL= Spec_Raw['wavelength']
 
     Los_Angle = 71#Theta angle of LoS in degrees
     TemperatureL = 17#Temp in eV
@@ -357,8 +397,17 @@ if doLowTemp:
                     }
     CIII_4649L = AtomSpect_Main(InputdeckCIII_4649L) #Gaussian Instrum
 
+    
+    CIII_Plotvars = [['royalblue', 2, '--','Gaussian+Instrum+Doppler' ,'D' ]    ]
+
+    thixas = PlotFunction(CIII_4649L,CIII_Plotvars[0],plotwind = [464.5,465.3],
+                 SpectrumPlot = np.array([CIII_wavL, Normalize(CIIISpecL)]),
+              #   plottitle=r"CIII $[1s^2]2s3s (^3S_1) -> [1s^2]2s3p (^3P_J)$" f": B=2.24T , LoS = {Los_Angle}, T = {Temperature}, " ,
+                 NormalizeSig = True,makefig=True ,fig_size=(10,8))
+
+
     if doCombSpec:
-        # plt.close('all')
+        plt.close('all')
         thisTempL =17
     
        
@@ -467,7 +516,7 @@ if doLowTemp:
         axslines.set_ylim(-0.1*np.max(CIII_4649L['reduced_sticks'][1]),np.max(CIII_4649L['reduced_sticks'][1]))
     
         axs.plot(Combspec[0][0], Normcombsig, label='Combined CIII + OII lines', marker='D',linewidth = 2, markersize = 5, markevery=2)
-        combax = PlotFunction(CIII_4649L,CIII_Plotvars[0],plotwind = [464.5,465.5], SpectrumPlot =[CIII_wav, Normalize(CIIISpec)],plottitle=f"B = 2.51T, Temp = {thisTempL}eV, Los = {Los_Angle} deg," r"$v_i$ = 1000 m/s, $\Delta \lambda_{instrum}$ = 0.035 nm" ,
+        combax = PlotFunction(CIII_4649L,CIII_Plotvars[0],plotwind = [464.5,465.5], SpectrumPlot =[CIII_wavL, Normalize(CIIISpecL)],plottitle=f"B = 2.51T, Temp = {thisTempL}eV, Los = {Los_Angle} deg," r"$v_i$ = 1000 m/s, $\Delta \lambda_{instrum}$ = 0.035 nm" ,
                      NormalizeSig=True, makefig=0,plotpol=0,axsin = axs)
         tfig=combax.get_figure()
         # tfig=combax[0][1].get_figure()
@@ -493,7 +542,7 @@ if doLowTemp:
         # plt.rcParams['figure.figsize'] = [10,10]
  
         unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-        tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .95), loc='outside center', ncol=4, fontsize=18)
+        tfig.legend(*zip(*unique), bbox_to_anchor=(.5, .99), loc='upper center', ncol=4, fontsize=18)
         plt.tight_layout(rect=[0, 0, 1, 0.92])
         plt.subplots_adjust(hspace=0, wspace=0)
         if savefigs:

@@ -469,8 +469,8 @@ def consolidate_legend(tfig, plotpol=True, plotnondip=False, legcols=None, fonts
         rect_adj = [0, 0, 1, 0.95]
 
     plt.tight_layout(rect=rect_adj)
-    tfig.legend(handles, labels, bbox_to_anchor=(0.5, 0.95), 
-                loc='outside center', ncol=cols, fontsize=fontsize)
+    tfig.legend(handles, labels, bbox_to_anchor=(0.5, 1), 
+                loc='upper center', ncol=cols, fontsize=fontsize)
     return tfig
 
 
@@ -657,7 +657,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
                              np.max(main_dict['reduced_sticks'][1])) 
          
         stem_ax.stem(main_dict['pi_sticks'][0], main_dict['pi_sticks'][1],  
-                     linefmt='C0', basefmt=" ", label='$\pi$') 
+                     linefmt='C0', basefmt=" ", label=r'$\pi$') 
         stem_ax.stem(main_dict['sigmaminus_sticks'][0], main_dict['sigmaminus_sticks'][1],  
                      linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$') 
         stem_ax.stem(main_dict['sigmaplus_sticks'][0], main_dict['sigmaplus_sticks'][1],  
@@ -737,7 +737,8 @@ def enable_manual_input(fig, slider):
 
 
 
-def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=True, banglevary=False, polvary=False, do_other = False):
+def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=True, banglevary=False
+               , polvary=False, do_other = False, Tmax = 30, Bmax = 5):
     '''
     Generate the plot with changeable sliders that allow for real-time interaction with the spectral results.
     All flags should be self-evident, with do_other referring to non-dipole transitions being shown.
@@ -786,7 +787,7 @@ def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=Tru
     # artists
     line, = axs.plot(Mycalc0['SpecOut'][0],
                      Normalize(Mycalc0['SpecOut'][1]), color="tab:brown",
-                     lw=3.5, label="Exact", linestyle=':',marker='o', markevery=10,markersize=7, alpha=0.9)
+                     lw=3.5, label="Intermediate", linestyle=':',marker='o', markevery=10,markersize=7, alpha=0.9)
 
     # line = axs.scatter(Mycalc0['SpecOut'][0],
     #                  Normalize(Mycalc0['SpecOut'][1]),color="tab:brown" ,
@@ -846,7 +847,7 @@ def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=Tru
         # vl_sm = axs.vlines(Mycalc0['sigmaminus_sticks'][0], np.zeros_like(Mycalc0['sigmaminus_sticks'][1]), Mycalc0['sigmaminus_sticks'][1],lw=2, color="tab:red", label="σ−")
         # vl_o = axs.vlines(Mycalc0['other_sticks'][0], np.zeros_like(Mycalc0['other_sticks'][1]), Mycalc0['other_sticks'][1],lw=2, color="tab:cyan", label="??")
 
-        vmarksp, vstemsp, vbasesp = axs.stem(Mycalc0['pi_sticks'][0], Mycalc0['pi_sticks'][1], linefmt='C0', markerfmt='o', basefmt=" ", label='$\pi$ component')
+        vmarksp, vstemsp, vbasesp = axs.stem(Mycalc0['pi_sticks'][0], Mycalc0['pi_sticks'][1], linefmt='C0', markerfmt='o', basefmt=" ", label=r'$\pi$ component')
         vmarkpi, vstempi, vbasepi = axs.stem(Mycalc0['sigmaminus_sticks'][0], Mycalc0['sigmaminus_sticks'][1], linefmt='C2', markerfmt='_', basefmt=" ", label=r'$\sigma^-$ component')
         vmarksm, vstemsm, vbasesm = axs.stem(Mycalc0['sigmaplus_sticks'][0], Mycalc0['sigmaplus_sticks'][1], linefmt='C3', markerfmt='+', basefmt=" ",  label=r'$\sigma^+$ component')
 
@@ -862,14 +863,14 @@ def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=Tru
     # sliders
 
     # figs.legend(bbox_to_anchor=(.5, 0.15),loc='outside center')
-    figs.legend(bbox_to_anchor=(.5, .075), loc='outside center', ncol=numcols)  # Excluding highfield and lowfield.
+    figs.legend(bbox_to_anchor=(.5, .125), loc='upper center', ncol=numcols)  # Excluding highfield and lowfield.
 
     axampB = figs.add_axes([0.025, 0.25, 0.0225, 0.63])
     B_Slider = Slider(axampB, "B (T)", 0, 5, valinit=init_B,
                       orientation="vertical", valstep=0.01)
 
     axampT = figs.add_axes([0.075, 0.25, 0.0225, 0.63])
-    Te_Slider = Slider(axampT, "T (eV)", 0.01, 30, valinit=init_Temp,
+    Te_Slider = Slider(axampT, "T (eV)", 0.01, 30, valstep = 0.01, valinit=init_Temp,
                        orientation="vertical")
 
     axampR = figs.add_axes([0.125, 0.25, 0.0225, 0.63])
@@ -1557,7 +1558,7 @@ def HZeeman(Level_in):
     # Spi is wavefunction basis matrix. COmprised of CG coefficients.
     Psi = Level_in[0]
 
-    PsiR = Level_in[0].T
+    # PsiR = Level_in[0].T
 
     PsiL = np.zeros_like(Psi)
     PsiS = np.zeros_like(Psi)
@@ -1932,7 +1933,7 @@ def HZeeman_HFS(Level_in, gI):
     Ldim = len(Level_in[-1])  # Dimension of the atomic level: Length of the # of possible states.
     Psi = Level_in[0]
 
-    PsiR = Level_in[0].T
+    # PsiR = Level_in[0].T
     PsiL = np.zeros_like(Psi)
     PsiS = np.zeros_like(Psi)
     PsiI = np.zeros_like(Psi)
@@ -2040,8 +2041,8 @@ def ZeemanFan(Inputdeck, flags=''):
         EtermE = None
         EtermG = None
     # Generate empty lists for storing values in later. Ground, excited, low and exact. Look to add high approximation too.
-    GZ_fan = []
-    EZ_fan = []
+    # GZ_fan = []
+    # EZ_fan = []
 
     # Check if HFS is being included.
     if 'I_spin' in Inputdeck:
@@ -2303,7 +2304,8 @@ def AtomSpect_Main(Inputdeck):
                      'amu' : 183 , #Weight in AMU
                      'Convfxn': 'Gaussian' , #Optional: 'Gaussian', 'GaussianInstrum'', 'Skewed' , 'Lorrentzian', 'Voigt'.
                      'Skewness' : [0.62,0.99] #Optional, [Left,Right] constant for the skewness of the lorrentzian function. Between 0 and 1. If both are 1, it is a normal lorrentzian.
-                     'Temp' : 300, #Temperature in K. Used for Gaussian convolution
+                     'Temp' : 300, #Temperature in K. Used for Gaussian, Gaussian Instrum, Voigt convolutions
+                     'TempeV' : 20 , #Temperature in eV. Can be passed instead of Temp in K. Converted as needed internally.
                      'specstep' : 0.002222 , #stepsize of linefunction [nm]
                      'specres' : 10 , #How many points are evaluated per spectrometer pixel window. Higher means smoother curve.
                      'fxnwindow': 0.5 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
@@ -2326,7 +2328,7 @@ def AtomSpect_Main(Inputdeck):
                      'EtermG': 169086.9076, #Term energy of lower state in cm^-1 - Required for DoHighSig
                      'EtermE' : 191444.47832914, #Term energy of upper state in cm^-1 - Required for DoHighSig
                      'sortE' : True , #Bool as to whether the wavefunctions will attempt to be sorted based on expected resulting energy before diagonalization. This significantly slows down operations. 
-                     }
+                      }
 
     Returns
     -------

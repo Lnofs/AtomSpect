@@ -94,6 +94,9 @@ CIII_PlotvarsH = [['green', 3, '-.','CIII']]
 
 
 #%%
+
+#This block is to showcase using a different type of data format, the .nc which is encoded as a common data format (cdf) file.
+#It uses the non-standard package of xarray, but is included here as the low temperature CIII dataset is
 import xarray as xr
 fil9 = f"{pathfil}/CIII_17eV.nc" #Low Temp from Supra dataset.
 

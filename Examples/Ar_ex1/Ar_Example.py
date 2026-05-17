@@ -2,12 +2,16 @@
 """
 
 @author: Leo Nofs
+Argon example for multiple different magnetic field strengths.
+The 750.4nm and 751.4nm lines are shown here. The spectrometer data has been normalized to a maximum intensity of 1.
+The contributions from the two different sets of lines are then accordingly scaled, uniformly, to match the spectra.
+
 """
 
 import  os, sys
 import numpy as np
 from matplotlib import pyplot as plt
-from brokenaxes import brokenaxes #This is only for adding a break in the axes to remove "dead space"
+
 #This adds the directy two folders up from the example file so taht the main module can be imported.
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
 from AtomSpect import AtomSpect_Main,PlotFunction,read_Spectra , plotZfan ,plotarray
@@ -28,7 +32,7 @@ Ar_B = [float(x) for x in  Spec_Raw[1][0][1:]]
 #This corrects for a misalignment in the calibration by 3 pixels. 
 shiftedAr = [x + (5-.3 -34*.002222) for x in Ar_Spec['wavelength'] ]  #Shifting because I think the raw data wasn't calibrated right
 
-savefigs = 1
+savefigs = 0
 doAllB = 0 #Just the 750.4 nm line
 
 doAllB2 = 0 #Both the 750.4 and 751.4 nm lines
@@ -68,7 +72,7 @@ if doAllB:
         Ar1 = AtomSpect_Main(InputdeckAr1)    
         
         plotvars = ['royalblue', 1.5, 'solid', 'Exact']
-        taxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True, plotlabel=f'B={Bvals}T')
+        thisaxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True, plotlabel=f'B={Bvals}T')
                     
         
         if savefigs:
@@ -305,7 +309,7 @@ if ArFan:
                'E_excited': np.array([107054.6, 107482.7, 106224]) , #Lowest J first, in cm^-1 
                'Bmag': Brange ,  #Magnetic Field  [T]
                'b_angle': 90 , #Angle between LoS and Bmax
-               'plottitle': f'Ar I 3p5 4s (3P) -> 3p5 4p (3P)' , #Title for plotting (optional)     
+               'plottitle': 'Ar I 3p5 4s (3P) -> 3p5 4p (3P)' , #Title for plotting (optional)     
                'spec_window' : [745,755], #Min and max convolutions 
                'plot_window' : [750.25,751.6], #Min and max for plot window range (nm)
                'amu' : 40  , #Weight in AMU
@@ -320,5 +324,33 @@ if ArFan:
 
     flags_ = 'EHL'
     Zfantest = plotZfan(InputdeckAr2Fan, flags=flags_)
+
+
+
+#%%This is just to showcase a very simple setup for operation.
+
+InputdeckAr1 = {'s_ground': 0 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
+              's_excited': 0 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
+              'l_ground': 1 , #Orbital Angular Momentum of ground state, int or half int
+              'l_excited': 0 ,#Orbital Angular Momentum of excited state, int or half int
+              'E_ground': np.array([95399.8276]) ,#Lowest J first, in cm^-1
+              'E_excited': np.array([108722.6194]) , #Lowest J first, in cm^-1
+              'Bmag': 2.018 , #Magnetic Field  [T]
+              'b_angle': 90 , #Angle between LoS and Bmax
+              'plottitle': 'Ar I 3p5 4s (1P) -> 3p5 4p (1S)' , #Title for plotting (optional)     
+              'spec_window' : [745,755], #Min and max convolutions 
+              'plot_window' : [750.25,750.5], #Min and max for plot window range (nm)
+              'amu' : 40  , #Weight in AMU
+              'specstep' : 0.004 , #Pixel resoltion of spectrometer in nm
+              'SpectrumData': [shiftedAr, Ar_Spec['signals'][0]] , 
+               }
+
+
+
+Ar1 = AtomSpect_Main(InputdeckAr1)    
+
+plotvars = ['royalblue', 1.5, 'solid', 'Exact']
+thisaxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True, plotlabel='B=2.018T')
+
 
 

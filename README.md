@@ -118,3 +118,4 @@ All data provided here is open source and free to use. Additional spectrometer d
 I kindly request that any works that utilize this code reference the AtomSpect publication:(doi goes here)
 
 Contact me at: lmn0022@auburn.edu
+
