@@ -3,7 +3,14 @@
 Created on Wed Jul 10 13:26:58 2024
 Example of Helium spectra taken in Auburn Universities Magnetized Dusty Plasma Experiment (MDPX)
 
+This example showcases the need of the intermediate regime solution by looking at the 1s2p to 1s4d (447 nm) line for He I
+with three magnetic field strengths (1.5T, 2.5T, 3.2T). This example also includes the inclusion of a linearly polarizing
+filter in the spectrometer line of sight and the impact of the filter oreintation makes on the observed spectra.
+    
+The standard zeeman fan plots are additionally included here.
+    
 @author: Leo Nofs
+
 """
 
 import os

@@ -4,10 +4,20 @@ Created on Mon Jul 15 17:08:11 2024
 
 @author: Leo Nofs
 
+This example is a more complicated system of CIII in a fusion experimental system. This means there are many contaminants which
+need to be included to fully and accurately represent the measured spectrometer data. 
+
+This example focuses on the MultiSpec function, which allows multiple individual species to be combined,
+each with their own conditions (temperature, B-field, mass, velocity, etc), and can be scaled and merged to make
+a single spectral lineshape while still keeping track of all individual mj component contributions (including polarization state).
+
+
 Data from the Aurora public data set http://dx.doi.org/10.35099/aurora-701
+
 
 The high temperature data was saved using np.save, so the example shows loading such a spectra.
 The low temperature spectra is pulled directly from the .nc files from the public data set.
+
 These were encoded using netCDF4 and was opened using a combination of the xarray and h5netcdf python packages.
 xarray and h5netcdf are both third-party packages, so while that workflow is included, it is wrapped in
 a try/except that falls back to just loading the .csv file of the same spectrometer data.

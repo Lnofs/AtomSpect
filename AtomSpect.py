@@ -3,6 +3,8 @@
 AtomSpect main function definitions.
 @author: Leo Nofs
 This contains all of the functions for operating the code. This file is NOT run directly.
+For details, updates, questions, bug reports, refer to the project github: https://github.com/Lnofs/AtomSpect
+
 
 """
 

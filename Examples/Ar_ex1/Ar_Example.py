@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 
 #This adds the directy two folders up from the example file so taht the main module can be imported.
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir)))
-from AtomSpect import AtomSpect_Main,PlotFunction,read_Spectra , plotZfan ,plotarray
+from AtomSpect import AtomSpect_Main,PlotFunction,read_Spectra , plotZfan 
 
 
 

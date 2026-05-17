@@ -3,9 +3,10 @@
 Created on Wed Aug 17 10:06:38 2024
 
 @author: Leo Nofs
+Part of the AtomSpect package as an example
 This code demonstrates using sliders to predict what the spectrometer might see.
 
-Also showcases using the slider and different data formats.
+
 """
 
 import csv, os, sys
@@ -93,23 +94,6 @@ CIIISigH = Normalize(CIIISpecHighTemp[1])
 CIII_PlotvarsH = [['green', 3, '-.','CIII']]                   
 
 
-#%%
-
-#This block is to showcase using a different type of data format, the .nc which is encoded as a common data format (cdf) file.
-#It uses the non-standard package of xarray, but is included here as the low temperature CIII dataset is
-import xarray as xr
-fil9 = f"{pathfil}/CIII_17eV.nc" #Low Temp from Supra dataset.
-
-# sys.path.append(pathfil)
-
-
-# fig1 = xr.open_dataset(fil, engine="h5netcdf")
-fig9 = xr.open_dataset(fil9, engine="h5netcdf")
-
-#Fiber44 of 20230215.015 available on Aurora dataset, publication states B = 2.51T, alpha = 71 deg, vi = 1km/s, ti = 17 eV
-Fiber44sig = Normalize(fig9['spectrum_data'].values[1])
-Fiber44wav = fig9['spectrum_data']['wavelength'].values[1]
-AirFiber44 = [Vac_to_air(x) for x in Fiber44wav]
 
 #%%
 # plt.close('all')
@@ -118,10 +102,8 @@ AirFiber44 = [Vac_to_air(x) for x in Fiber44wav]
 
 # MakeSlider(InputHe,[He_NonPol_Spec['wavelength'],He_NonPol_Spec['signals'][0]],[447.1,447.2],do_sticks = 1,do_Polplot=0,polvary=0,banglevary=0)
 
-# MakeSlider(InputdeckCIII_4649,[CIIIwaveH,CIIISigH],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
-# MakeSlider(InputdeckCIII_4649,[CIIIwaveL,CIIISigL],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
+MakeSlider(InputdeckCIII_4649,[CIIIwaveH,CIIISigH],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
 
 
-MakeSlider(InputdeckCIII_4649,[AirFiber44,Fiber44sig],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
 
 
