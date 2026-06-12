@@ -13,7 +13,7 @@ a single spectral lineshape while still keeping track of all individual mj compo
 
 
 Data from the Aurora public data set http://dx.doi.org/10.35099/aurora-701
-
+Additional analysis of this data can be found in the corresponding article here: https://doi.org/10.1063/5.0208586
 
 The high temperature data was saved using np.save, so the example shows loading such a spectra.
 The low temperature spectra is pulled directly from the .nc files from the public data set.
@@ -43,7 +43,7 @@ sys.path.append(pathfil)
 
 
 savedpi = 144
-savefigs = 0
+savefigs = 1
 doHighTemp = 1
 doCombSpec = 1
 doConvComp = 0
@@ -382,7 +382,7 @@ if doLowTemp:
     Los_Angle = 71#Theta angle of LoS in degrees
     TemperatureL = 17#Temp in eV
     # Polangle = 55.75
-    BmagL = 2.51
+    BmagL = 2.24
     InputdeckCIII_4649L = {'s_ground':1 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
                        's_excited':1 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
                        'l_ground': 0 , #Orbital Angular Momentum of ground state, int or half int
@@ -399,7 +399,7 @@ if doLowTemp:
                        'Temp' : TemperatureL*11604, #Temperature in K. Used for Gaussian convolution
                        'plottitle': r"CIII $[1s^2]2s3s (^3S_1) -> [1s^2]2s3p (^3P_J)$" f": B={BmagL}T , LoS = {Los_Angle}, T = {TemperatureL}, ", #Title for plotting (optional)     
                        # 'specres' : 20,
-                       'ion_vel' : -1000, #Ion velocity in m/s
+                       'ion_vel' : -500, #Ion velocity in m/s
                        'fxnwindow': 2 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                        # 'Pol_angle': Polangle ,#Angle polarizing filter makes with max linear transmission, Optional
  
@@ -497,7 +497,7 @@ if doLowTemp:
         
         multispecs = [CIII_4649L,CIII_4663,OII_465,OIII_465]
         #This allows for scaling of the differeint possible contributions.
-        scalers = [1,.1,.05,0.3]
+        scalers = [1,.05,.05,0.3]
         temp_list = np.array([thisTempL,])*11602
         
         combspect = MultiSpec(multispecs,scalers)

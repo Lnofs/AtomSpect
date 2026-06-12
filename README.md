@@ -3,6 +3,8 @@ AtomSpect is a newly developed Python package designed for simplify the spectros
 
 AtomSpect is NOT intended to be a replacement for the robust ab-initio atomic structure calculations for energy levels. 
 
+Please see the corresponding publication for further details of the physics and math: https://doi.org/10.1016/j.jqsrt.2026.110015
+
 # Installation
 To use: Unzip the repository and open one of the example scripts in the examples folder. Run the example script, not AtomSpect.py.
 
@@ -114,10 +116,14 @@ Importing/saving data. We plan to allow for importing of atomic energy level dat
 Fancy GUI! The Slider GUI is okay, but is unable to handle multiple species/lines. A robust GUI is in the initial stages of design which would transform everything about using AtomSpect.
 
 # Data Use
+The spectromter data provided in the He and Ar spectra was collected by Tommy Gonda, Matt Kriete, and David Ennis. This data is used and included here with their permission. 
+
+The CIII data is from the Aurora public data set: http://dx.doi.org/10.35099/aurora-70
+
 All data provided here is open source and free to use. Additional spectrometer data is always welcome.
 
 
-I kindly request that any works that utilize this code reference the AtomSpect publication:(doi goes here)
+I kindly request that any works that utilize this code reference the AtomSpect publication:(https://doi.org/10.1016/j.jqsrt.2026.110015)
 
 Contact me at: lmn0022@auburn.edu
 

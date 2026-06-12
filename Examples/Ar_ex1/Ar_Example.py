@@ -6,6 +6,18 @@ Argon example for multiple different magnetic field strengths.
 The 750.4nm and 751.4nm lines are shown here. The spectrometer data has been normalized to a maximum intensity of 1.
 The contributions from the two different sets of lines are then accordingly scaled, uniformly, to match the spectra.
 
+This spectra was collected by Tommy Gonda, Matt Kriete, and David Ennis using the magnetic fields
+of the Magnetized Dusty Plasma Experiment (MDPX) at Auburn University, in Auburn, AL
+
+The Argon spectra was collected after reflection off a beam-splitting plate. This plate has a 
+wavelength AND polarization mode dependent reflectivity coefficient. This modifies the relative
+intensity ratio between linear (pi) and circular (sigma) components of the spectra.
+
+For these Argon lines, the plate data sheet sees approximate values of (for 750 nm light)
+TAlpha = np.sqrt(0.8) - For the pi component
+TBeta = np.sqrt(0.2) - For the sigma component
+
+
 """
 
 import  os, sys
@@ -32,7 +44,7 @@ Ar_B = [float(x) for x in  Spec_Raw[1][0][1:]]
 #This corrects for a misalignment in the calibration by 3 pixels. 
 shiftedAr = [x + (5-.3 -34*.002222) for x in Ar_Spec['wavelength'] ]  #Shifting because I think the raw data wasn't calibrated right
 
-savefigs = 0
+savefigs = 1
 doAllB = 0 #Just the 750.4 nm line
 
 doAllB2 = 0 #Both the 750.4 and 751.4 nm lines
@@ -65,6 +77,8 @@ if doAllB:
                       'SpectrumData': [shiftedAr, Ar_Spec['signals'][i]] , 
                       # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
+                      'TAlpha' : np.sqrt(1-0.2) ,
+                      'TBeta' : np.sqrt(1-0.8) ,
                        }
         
     
@@ -114,7 +128,9 @@ if doAllB2:
                       'SpectrumData': [shiftedAr, Ar_Spec['signals'][i]] , 
                       'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
-                       }
+                      'TAlpha' : np.sqrt(1-0.2) ,
+                      'TBeta' : np.sqrt(1-0.8) , 
+                      }
         
     
         
@@ -225,6 +241,8 @@ if doComboPlot:
 
                       # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
+                        'TAlpha' : np.sqrt(1-0.2) ,
+                        'TBeta' : np.sqrt(1-0.8) ,
                        }
     
         #This is delta of 13303.6742 cm-1
@@ -250,28 +268,97 @@ if doComboPlot:
                       'specres': 10,  # How many steps per resolution are calculated. Higher makes a smoother curve.
                       # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
+                        'TAlpha' : np.sqrt(1-0.2) ,
+                        'TBeta' : np.sqrt(1-0.8) ,
                        }
-       
+               
         Ar1 = AtomSpect_Main(InputdeckAr1)    
-        plotvars = ['royalblue', 1, 'solid', '750.4nm']
+        plotvars = ['royalblue', 1, 'solid', '750.4nm - Corrected Pol']
+        Ar2 = AtomSpect_Main(InputdeckAr2)
+        plotvars2 = ['red', 1, 'solid', '751.4 nm - Corrected Pol']
+        
+        
+        
+        
+        InputdeckAr1b = {'s_ground': 0 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
+                      's_excited': 0 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
+                      'l_ground': 1 , #Orbital Angular Momentum of ground state, int or half int
+                      'l_excited': 0 ,#Orbital Angular Momentum of excited state, int or half int
+                      'E_ground': np.array([95399.8276]) ,#Lowest J first, in cm^-1
+                      'E_excited': np.array([108722.6194]) , #Lowest J first, in cm^-1
+                      'EtermG' : 95399.8276 , # Term energy for the ground level
+                      'EtermE' : 108722.6194  ,# Term Energy for the excited level
+                      'Bmag': Bcomb[i] ,  #Magnetic Field  [T]
+                      'b_angle': 90 , #Angle between LoS and Bmax
+                      'plottitle': f'Ar I 3p5 4s (1P) -> 3p5 4p (1S)' , #Title for plotting (optional)     
+                      # 'spec_window' : [745,755], #Min and max convolutions 
+                      # 'plot_window' : [750.25,751.6], #Min and max for plot window range (nm)
+                      'spec_window' : [745,755], #Min and max convolutions 
+                      'plot_window' : [750.0,751.6], #Min and max for plot window range (nm)
+                      'amu' : 40  , #Weight in AMU
+                      'specstep' : 0.004 , #Pixel resoltion of spectrometer in nm
+                      'SpectrumData': [shiftedAr, Ar_Spec['signals'][SpecLoc[i]] ] , 
+                      'specres': 10,  # How many steps per resolution are calculated. Higher makes a smoother curve.
+
+                      # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
+                      # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
+
+                       }
+    
+        #This is delta of 13303.6742 cm-1
+        InputdeckAr2b = {'s_ground': 1 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
+                      's_excited': 1 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
+                      'l_ground': 1 , #Orbital Angular Momentum of ground state, int or half int
+                      'l_excited': 1 ,#Orbital Angular Momentum of excited state, int or half int
+                      # 'E_ground': np.array([94541.62, 93750.5978,93131.89]) , #Lowest J first, in cm^-1
+                      # 'E_excited': np.array([107054.6, 107482.7, 106224]) , #Lowest J first, in cm^-1 
+                      'E_ground': np.array([94541.62, 93750.5978,93131.89]) , #Lowest J first, in cm^-1
+                      'E_excited': np.array([107054.6, 107482.7, 106224]) , #Lowest J first, in cm^-1 
+                      'EtermG' : 93750.5978, # Term energy for the ground level
+                      'EtermE' : 107054.6 , # Term Energy for the excited level
+                      
+                      'Bmag': Bcomb[i] ,  #Magnetic Field  [T]
+                      'b_angle': 90 , #Angle between LoS and Bmax
+                      'plottitle': f'Ar I 3p5 4s (3P) -> 3p5 4p (3P)' , #Title for plotting (optional)     
+                      'spec_window' : [750,755] , #Min and max convolutions 
+                      'plot_window' : [750.25,751.6], #Min and max for plot window range (nm)
+                      'amu' : 40  , #Weight in AMU
+                      'specstep' : 0.004 , #Pixel resoltion of spectrometer in nm
+                      'SpectrumData': [shiftedAr, Ar_Spec['signals'][SpecLoc[i]] ] , 
+                      'specres': 10,  # How many steps per resolution are calculated. Higher makes a smoother curve.
+                      # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
+                      # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
+
+                       }
+               
+        Ar1b = AtomSpect_Main(InputdeckAr1b)    
+        plotvarsb = ['orange', 1, ':', '750.4nm - Expected' , 's']
+        Ar2b = AtomSpect_Main(InputdeckAr2b)
+        plotvars2b = ['green', 1, ':', '751.4 nm - Expected', 's']
+        
+        
         
         if taxs is not None:
-            PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=0,SpectrometerLS='dashed', axsin=taxs,position=[i,0], SpectrometerMarker = 'D', plotpol=0,marker_size=6)#, plotlabel=f'B={2.21}T')
             # PlotFunction(Ar1['SpecOutHigh'], ['red',1,'dotted', '750.4 nm - Strong','o'], NormalizeSig=0, makefig=0, axsin=taxs,position=[i,0], plotpol=0)#, plotlabel=f'B={2.21}T')
-
+            pass
         else:
-            taxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True,Shape = (2,1),SpectrometerLS='dashed', SpectrometerMarker = 'D', plotpol=0,fig_size=(14,12),marker_size=6)#, plotlabel=f'B={2.21}T')
+            taxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True,Shape = (2,1),SpectrometerLS='dashed', SpectrometerMarker = 'D', plotpol=0,fig_size=(14,12),marker_size=4)#, plotlabel=f'B={2.21}T')
             # PlotFunction(Ar1['SpecOutHigh'], ['red',1,'dotted', '750.4 nm - Strong','o'], NormalizeSig=0, makefig=0, axsin=taxs,position=[i,0], plotpol=0)#, plotlabel=f'B={2.21}T')
 
         
     
-        Ar2 = AtomSpect_Main(InputdeckAr2)
-        plotvars2 = ['red', 1, '-.', '751.4 nm', 's']
-    
+
+        PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=0,SpectrometerLS='dashed', axsin=taxs,position=[i,0], SpectrometerMarker = 'D', plotpol=0,marker_size=4)#, plotlabel=f'B={2.21}T')
+
         PlotFunction(Ar2, plotvars2, NormalizeSig=True, makefig=0,SpectrometerLS='dotted', NormalizeScale = np.max(Ar_Spec['signals'][SpecLoc[i]][690:]),
-                     axsin = taxs,position=[i,0], SpectrometerMarker = 'X', plotpol=0 ,  legcols=3,marker_size=6)
-            
-            
+                     axsin = taxs,position=[i,0], SpectrometerMarker = 'X', plotpol=0 ,  legcols=3,marker_size=4)
+          
+        PlotFunction(Ar1b, plotvarsb, NormalizeSig=True, makefig=0,SpectrometerLS='dashed', axsin=taxs,position=[i,0], SpectrometerMarker = 'D', plotpol=0,marker_size=4)#, plotlabel=f'B={2.21}T')
+
+        PlotFunction(Ar2b, plotvars2b, NormalizeSig=True, makefig=0,SpectrometerLS='dotted', NormalizeScale = np.max(Ar_Spec['signals'][SpecLoc[i]][690:]),
+                     axsin = taxs,position=[i,0], SpectrometerMarker = 'X', plotpol=0 ,  legcols=3,marker_size=4)
+              
+  
         # PlotFunction(Ar2['SpecOutLow'], ['magenta',1,'dotted', '751.4 nm - Low','o'], NormalizeSig=True, makefig=0,SpectrometerLS='dotted', NormalizeScale = np.max(Ar_Spec['signals'][SpecLoc[i]][690:]),
         #              axsin = taxs,position=[i,0], SpectrometerMarker = 'X', plotpol=0 , plotwind = InputdeckAr2['plot_window'], legcols=3)
             
@@ -285,6 +372,8 @@ if doComboPlot:
         
         
     if savefigs:
+        plt.tight_layout(rect=[0, 0, 1, .90])
+
         plt.savefig(f'ArI_Comb.pdf',format='pdf')
         # plt.savefig(f'ArI_B={Bvals}.png',dpi=800)
 
@@ -328,29 +417,4 @@ if ArFan:
 
 
 #%%This is just to showcase a very simple setup for operation.
-
-InputdeckAr1 = {'s_ground': 0 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
-              's_excited': 0 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
-              'l_ground': 1 , #Orbital Angular Momentum of ground state, int or half int
-              'l_excited': 0 ,#Orbital Angular Momentum of excited state, int or half int
-              'E_ground': np.array([95399.8276]) ,#Lowest J first, in cm^-1
-              'E_excited': np.array([108722.6194]) , #Lowest J first, in cm^-1
-              'Bmag': 2.018 , #Magnetic Field  [T]
-              'b_angle': 90 , #Angle between LoS and Bmax
-              'plottitle': 'Ar I 3p5 4s (1P) -> 3p5 4p (1S)' , #Title for plotting (optional)     
-              'spec_window' : [745,755], #Min and max convolutions 
-              'plot_window' : [750.25,750.5], #Min and max for plot window range (nm)
-              'amu' : 40  , #Weight in AMU
-              'specstep' : 0.004 , #Pixel resoltion of spectrometer in nm
-              'SpectrumData': [shiftedAr, Ar_Spec['signals'][0]] , 
-               }
-
-
-
-Ar1 = AtomSpect_Main(InputdeckAr1)    
-
-plotvars = ['royalblue', 1.5, 'solid', 'Exact']
-thisaxs = PlotFunction(Ar1, plotvars, NormalizeSig=True, makefig=True, plotlabel='B=2.018T')
-
-
 

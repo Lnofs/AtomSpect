@@ -17,7 +17,7 @@ from matplotlib import ticker
 import numpy as np
 from matplotlib import pyplot as plt
 
-savefigs =0 #Flag for whether figures should be saved.
+savefigs =1 #Flag for whether figures should be saved.
 
 c_light = 299792458 #Speed of light in m/s
 kboltz = 1.381e-23 #Boltzmann Constant
@@ -25,14 +25,14 @@ m_prot = 1.667e-27 #Mass of proton in kg
 
 
 
-xRange = np.linspace(401.95e-9,402.05e-9, 1000)
+xRange = np.linspace(428.95e-9,429.05e-9, 1000)
 xRange2 = [x*1e9 for x in xRange]
 
 
-xpeak = 402e-9
+xpeak = 429e-9
 xpeak2 = xpeak*1e9
 
-Temp_K = 5*11602
+Temp_K = 10*11602
 # Atomic_Mass = 183 #Mass in amu
 Atomic_Mass = 183 #Mass in amu
 
@@ -302,7 +302,7 @@ plt.vlines(xpeak2,0,1, color='black',label='Peak' )
 # plt.rcParams['figure.fontsize'] = 16
 # plt.xlim(401.95,402.05)
 papax = figpap.get_axes()
-papax[0].xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.1f}"))
+papax[0].xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
 figpap.legend( bbox_to_anchor=(.5, .94), loc='outside center', ncol=3, fontsize=18)
 plt.tight_layout(rect=[0, 0, 1, 0.90])
 # plt.tight_layout()

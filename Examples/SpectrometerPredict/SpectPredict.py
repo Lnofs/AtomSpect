@@ -51,10 +51,15 @@ InputHe = {'s_ground': 1 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , i
               'plot_window' : [447.1,447.2], #Min and max for plot window range (nm), convolutions will only take place within this range
               'amu' : 2  ,#Weight in AMU
               'specres' : 10 , #How many steps per resolution are calculated. Higher makes a smoother curve.
-              'DoLowSig' : 'Yes' , #If this exists in the input, lowfield signal strength will be calculated. 
-              'DoHighSig': 'Yes' , #To use Strong field approximation, you MUST include EtermE and EtermG keys for term energy
- 
+              # 'DoLowSig' : 'Yes' , #If this exists in the input, lowfield signal strength will be calculated. 
+              # 'DoHighSig': 'Yes' , #To use Strong field approximation, you MUST include EtermE and EtermG keys for term energy
+                    'TAlpha' : np.sqrt(0.65) ,
+                    'TBeta' : np.sqrt(0.35),
               }  
+
+
+
+
 
 
 
@@ -71,10 +76,10 @@ InputdeckCIII_4649 = {'s_ground':1 ,#Spin multiplicity,s, for ground state ^(2s 
                       'specstep' : 0.0075 , #Resolution of spectrometer in nm
                       'Convfxn': 'GaussianInstrum', #Optional: 'Gaussian', 'Skewed'.
                       'Temp' : 11602*7.9, #Temperature in K. Used for Gaussian convolution
-                      'plottitle': r'CIII [1$s^2$]2s3s $(^3S_1)$ -> [1$s^2$]2s3p ($^3P_J$)', #Title for plotting (optional)     
+                      'plottitle': r'CIII [1$s^2$]2s3s $(^3S_1)$ -> [1$s^2$]2s3p ($^3P_J$), B=2.24T, LoS=68.6, T = 28.1eV', #Title for plotting (optional)     
 
                       # 'plottitle': f'CIII [1s^2]2s3s (^3S_1) -> [1s^2]2s3p (^3P_J): B=2.24T , LoS = {90}', #Title for plotting (optional)     
-                      'ion_vel' : -1000, #Ion velocity in m/s
+                      'ion_vel' : -500, #Ion velocity in m/s
                       'fxnwindow': 1 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                       # 'Pol_angle': 50 ,#Angle polarizing filter makes with max linear transmission, Optional
                       # 'DoLowSig' : 'Yes' , #If this exists in the input, lowfield signal strength will be calculated. 
@@ -82,6 +87,30 @@ InputdeckCIII_4649 = {'s_ground':1 ,#Spin multiplicity,s, for ground state ^(2s 
                       
                    }
 #
+
+InputdeckCIII_4649L = {'s_ground':1 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , int or half int
+                      's_excited':1 ,#Spin multiplicity,s, for excited state ^(2s +1)L_J, int or half int
+                      'l_ground': 0 , #Orbital Angular Momentum of ground state, int or half int
+                      'l_excited': 1 ,#Orbital Angular Momentum of excited state, int or half int
+                      'E_ground': np.array([238213])  ,#Lowest J first, in cm^-1
+                      'E_excited':  np.array([259705.55,259711.22,259724.30]) , #Lowest J first, in cm^-1
+                      'Bmag': 2.4, #Magnetic Field  [T]
+                      'b_angle': 50 , #Angle between LoS and Bmax
+                      'plot_window' : [464.5,465.5], #Min and max for plot window range (nm)
+                      'amu' : 12.011 ,  #Weight in AMU
+                      'specstep' : 0.044 , #Resolution of spectrometer in nm
+                      'Convfxn': 'GaussianInstrum', #Optional: 'Gaussian', 'Skewed'.
+                      'Temp' : 11602*7.9, #Temperature in K. Used for Gaussian convolution
+                      'plottitle': r'CIII [1$s^2$]2s3s $(^3S_1)$ -> [1$s^2$]2s3p ($^3P_J$), B=2.24T, LoS=68.6, T = 17.1eV', #Title for plotting (optional)     
+
+                      # 'plottitle': f'CIII [1s^2]2s3s (^3S_1) -> [1s^2]2s3p (^3P_J): B=2.24T , LoS = {90}', #Title for plotting (optional)     
+                      'ion_vel' : -500, #Ion velocity in m/s
+                      'fxnwindow': 1 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
+                      # 'Pol_angle': 50 ,#Angle polarizing filter makes with max linear transmission, Optional
+                      # 'DoLowSig' : 'Yes' , #If this exists in the input, lowfield signal strength will be calculated. 
+                      # 'DoHighSig' : 'Yes' , #If this exists in the input, lowfield signal strength will be calculated. 
+                      
+                   }
 CIII_Z = AtomSpect_Main(InputdeckCIII_4649)
 
 
@@ -94,16 +123,21 @@ CIIISigH = Normalize(CIIISpecHighTemp[1])
 CIII_PlotvarsH = [['green', 3, '-.','CIII']]                   
 
 
+fil = pathfil + '/CIII_17eV1.csv'
+Spec_Raw = read_Spectra(fil, headercount=1, keepheaders=False)
+CIIISpecL= Normalize(Spec_Raw['signals'])
+CIII_wavL= Spec_Raw['wavelength']
 
 #%%
 # plt.close('all')
 
 
 
-# MakeSlider(InputHe,[He_NonPol_Spec['wavelength'],He_NonPol_Spec['signals'][0]],[447.1,447.2],do_sticks = 1,do_Polplot=0,polvary=0,banglevary=0)
+MakeSlider(InputHe,[He_NonPol_Spec['wavelength'],He_NonPol_Spec['signals'][0]],[447.1,447.2],do_sticks = 1,do_Polplot=0,polvary=0,banglevary=1)
 
-MakeSlider(InputdeckCIII_4649,[CIIIwaveH,CIIISigH],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
+# MakeSlider(InputdeckCIII_4649,[CIIIwaveH,CIIISigH],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
 
+# MakeSlider(InputdeckCIII_4649L,[CIII_wavL,CIIISpecL],[464.5,465.5],do_sticks = 1,do_Polplot=1,polvary=0,banglevary=1)
 
 
 

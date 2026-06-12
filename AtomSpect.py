@@ -1168,7 +1168,7 @@ def make_Jmj(J_am):
     return Jtmp
 
 
-def polarization(mupper, mlower, Btheta, gamma=0, Pol_Filter=False, T_Alpha=1, T_Beta=0):
+def polarization(mupper, mlower, Btheta, gamma=0, Pol_Filter=False, TAlpha=1, TBeta=1, pol1 = 1, pol2 = 0):
     '''
     This polarization calculation is generally based on Isler1997 http://dx.doi.org/10.1063/1.872095
     A correction is made with respect to a negative sign in the definition of epsilon plus/minus to be more in line with typical notation.
@@ -1181,8 +1181,8 @@ def polarization(mupper, mlower, Btheta, gamma=0, Pol_Filter=False, T_Alpha=1, T
     Btheta : Angle between LoS and maximum magnetic field
     gamma : Angle polarization filter makes with respect to maximizing linear (pi) light transmission.
     Pol_Filter : Boolean, whether a polarization filter was in place for data collection
-    T_Alpha : Transmission along one polarization axis. 
-    T_Beta : Transmission coefficient along perpendicular polarization axis.
+    T_Alpha : Transmission along one polarization axis. #Should be 1.0 without additional components
+    T_Beta : Transmission coefficient along perpendicular polarization axis. Should be 1.0 without additional components
 
     Returns
     -------
@@ -1191,29 +1191,32 @@ def polarization(mupper, mlower, Btheta, gamma=0, Pol_Filter=False, T_Alpha=1, T
     '''
 
     if Pol_Filter == False:
-        # A toggle is needed here because an aligned polarized filter is not the same as not having a filter.
-        pol1 = 1
-        pol2 = 1
-        ealph = 1
-        ebeta = 1
+        
+        ealph = np.sqrt(TAlpha) #These are unity unless modified by an additional component
+        ebeta = np.sqrt(TBeta) #These are unity unless modified by an additional component
+        
     else:
-        pol1 = T_Alpha
-        pol2 = T_Beta
-        gammaangle = np.deg2rad(gamma)
-        ealph = pol1*np.cos(gammaangle) + pol2*np.sin(gammaangle)
-        ebeta = pol1*np.sin(gammaangle) + pol2*np.cos(gammaangle)
-    theta_rad = np.deg2rad(Btheta)  # convert deg to radians
 
+        gammaangle = np.deg2rad(gamma)
+        ealph = TAlpha*(pol1*np.cos(gammaangle) + pol2*np.sin(gammaangle))
+        ebeta = TBeta*(pol1*np.sin(gammaangle) + pol2*np.cos(gammaangle))
+        
+    theta_rad = np.deg2rad(Btheta)  # convert deg to radians
+    # print(ealph,ebeta)
+    
     epsz = ealph*np.sin(theta_rad)
+
     e0 = epsz
 
     # eps0 is for a change in am of 0 (pi)
     eps0 = np.sqrt(e0*e0)
 
     # eps1 is the for a change in am of 1 (sigma)
-    eps1 = 0.5*np.sqrt((np.cos(theta_rad)**2) * (ealph**2) + (ebeta**2))  # While this looks like Isler appendix, we haven't squared it for the intensity calc yet.
+    # eps1 = 0.5*np.sqrt(((np.cos(theta_rad)**2) * (ealph**2) + (ebeta**2)))  # While this looks like Isler appendix, we haven't squared it for the intensity calc yet.
 
+    eps1 = np.sqrt(((np.cos(theta_rad)**2) * (ealph**2) + (ebeta**2))*0.5)  # Same as Isler appendix, we haven't squared it for the intensity calc yet.
 
+    # print(polfact)
     # Calculate and check the change in magnetic angular momentum. circularly (sigma) light has a change of +/-1, linear (pi) is a change of 0.
     delta_am = np.array(mupper) - np.array(mlower)
     rad_tmp = [0, 3]
@@ -1393,8 +1396,8 @@ def stateprocess(L_state, S_state, E_level, thisB, sortE=False):
                 w3mat[i, j] = CG1
         return [w3mat, E_cm0_Mat, LowE, E_cm0_flat, bigstatelist]
 
-def Zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False):
-
+def Zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False, T_Alpha = 1, T_Beta = 1):
+    # print(T_Alpha,T_Beta)
     # Need to make a list of all possible combinations such that each upper state is repeated by the dim of the lower level, and a second list where the opposite is true.
     # ie, each lower level is repeated by the count of upper level states. This makes two lower x upper length arrays that will be useful for wigner calcs.
     bjlist = [[x, y] for y in LevelE[-1] for x in LevelG[-1]]  # This list will be [[bigstatesG], [bigstatesE]]
@@ -1404,7 +1407,7 @@ def Zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False):
     for i in range(len(bjlist)):
 
 
-        rad.append(polarization(bjlist[i][1][1], bjlist[i][0][1], Bangle, gamma, Pol_Filter=Filter))
+        rad.append(polarization(bjlist[i][1][1], bjlist[i][0][1], Bangle, gamma, Pol_Filter=Filter, TAlpha = T_Alpha, TBeta = T_Beta))
 
     # Calculate the signal strength coefficients as the product of radiation polarization term and dipole strength.
     # This is essentially a row vector.
@@ -1803,7 +1806,7 @@ def dipolestr_HFS(LG, LE):
     return tdp3
 
 
-def Zeeman_signal_HFS(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False):
+def Zeeman_signal_HFS(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False,T_Alpha = 1, T_Beta = 1):
 
     # Need to make a list of all possible combinations such that each upper state is repeated by the dim of the lower level, and a second list where the opposite is true.
     # ie, each lower level is repeated by the count of upper level states. This makes two lower x upper length arrays that will be useful for wigner calcs.
@@ -1812,7 +1815,7 @@ def Zeeman_signal_HFS(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False
     # need to define the polarization effect from the filter.
     rad = []
     for i in range(len(bflist)):
-        rad.append(polarization(bflist[i][1][1], bflist[i][0][1], Bangle, gamma, Pol_Filter=Filter))
+        rad.append(polarization(bflist[i][1][1], bflist[i][0][1], Bangle, gamma, Pol_Filter=Filter,TAlpha = T_Alpha, TBeta = T_Beta))
         # Rad output is [polfactor,'polarization'] with polarization being 'sigma-','pi','sigma+' accordingly
     # Calculate signal strength coefficient as product of dipole strength and polarization component
     Signalcoeff = []
@@ -2357,6 +2360,17 @@ def AtomSpect_Main(Inputdeck):
         Polangle = Inputdeck['Pol_angle']
         Polfilter = True
 
+
+    if 'TAlpha' in Inputdeck:
+        Talpha = Inputdeck['TAlpha']
+    else:
+        Talpha = 1
+    
+    if 'TBeta' in Inputdeck:
+        Tbeta = Inputdeck['TBeta']
+    else:
+        Tbeta = 1
+    
     if 'bidir' in Inputdeck:
         bidirect = Inputdeck['bidir']
     else:
@@ -2371,7 +2385,8 @@ def AtomSpect_Main(Inputdeck):
         pass
     else:
         Inputdeck['amu'] = 1  # Setting a default value so it's not required to be input.
-        
+     
+
     # 1. Establish the "Spectrometer" fallback range
     spec_data = Inputdeck.get('SpectrumData')
     # If data exists, use its bounds; otherwise, use the global default
@@ -2427,7 +2442,7 @@ def AtomSpect_Main(Inputdeck):
         Ground_Zeeman_HFS = Zeeman_func_HFS(Ground_Level_HFS, Bfield_ext, thisg_I, PsiHFS)
         Excited_Zeeman_HFS = Zeeman_func_HFS(Excited_Level_HFS, Bfield_ext, thisg_I, PsiHFS)
         # Use the eigenvectors and values from the diagonalization of the hamiltonian to calculate the relative signal strength. This function uses a combination of Isler1997 and Metcalf 4.32/4.33
-        Z_sig_HFS = Zeeman_signal_HFS(Ground_Level_HFS, Ground_Zeeman_HFS, Excited_Level_HFS, Excited_Zeeman_HFS, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter)
+        Z_sig_HFS = Zeeman_signal_HFS(Ground_Level_HFS, Ground_Zeeman_HFS, Excited_Level_HFS, Excited_Zeeman_HFS, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter,T_Alpha = Talpha, T_Beta = Tbeta)
 
         # Output a bunch of data
         data = {}
@@ -2458,7 +2473,7 @@ def AtomSpect_Main(Inputdeck):
         Ground_Zeeman = Zeeman_func(Ground_Level, Bfield_ext)
         Excited_Zeeman = Zeeman_func(Excited_Level, Bfield_ext)
         # Use the new eigenvectors as the basis to calculate the relative signal strengths for the transitions
-        Z_sig = Zeeman_signal(Ground_Level, Ground_Zeeman, Excited_Level, Excited_Zeeman, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter)
+        Z_sig = Zeeman_signal(Ground_Level, Ground_Zeeman, Excited_Level, Excited_Zeeman, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter,T_Alpha = Talpha, T_Beta = Tbeta)
         Z_sig_norad = Zeeman_sig_norad(Ground_Level, Ground_Zeeman, Excited_Level, Excited_Zeeman)
 
         if 'DoLowSig' in Inputdeck:
@@ -2469,7 +2484,7 @@ def AtomSpect_Main(Inputdeck):
                 Excited_Level = stateprocess(L_excited, S_excited, E_excited, Bfield_ext, sortE=sortE)
                 Ground_Zeeman_Low = Zeeman_func(Ground_Level, Bfield_ext, Lowfield=True)
                 Excited_Zeeman_Low = Zeeman_func(Excited_Level, Bfield_ext, Lowfield=True)
-                Z_sig_Low = Zeeman_signal(Ground_Level, Ground_Zeeman_Low, Excited_Level, Excited_Zeeman_Low, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter)
+                Z_sig_Low = Zeeman_signal(Ground_Level, Ground_Zeeman_Low, Excited_Level, Excited_Zeeman_Low, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter,T_Alpha = Talpha, T_Beta = Tbeta)
                 # Z_sig_Low = Zeemansig_Low(Ground_Level,Excited_Level,Bangle=Bext_angle,gamma=Polangle, Filter=Polfilter)
                 data['signal_low'] = Z_sig_Low[0]
                 data['wave_vac_low'] = Z_sig_Low[6]
@@ -2484,7 +2499,7 @@ def AtomSpect_Main(Inputdeck):
                 Excited_Level = stateprocess(L_excited, S_excited, E_excited, Bfield_ext, sortE=sortE)
                 Ground_Zeeman_High = Zeeman_func(Ground_Level, Bfield_ext, Highfield=True, Eterm=EtermG)
                 Excited_Zeeman_High = Zeeman_func(Excited_Level, Bfield_ext, Highfield=True,Eterm=EtermE)
-                Z_sig_High = Zeeman_signal(Ground_Level, Ground_Zeeman_High, Excited_Level, Excited_Zeeman_High, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter)
+                Z_sig_High = Zeeman_signal(Ground_Level, Ground_Zeeman_High, Excited_Level, Excited_Zeeman_High, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter,T_Alpha = Talpha, T_Beta = Tbeta)
                 # Z_sig_Low = Zeemansig_Low(Ground_Level,Excited_Level,Bangle=Bext_angle,gamma=Polangle, Filter=Polfilter)
 
                 data['signal_high'] = Z_sig_High[0]
