@@ -4,7 +4,7 @@ Created on Wed Jul 10 13:26:58 2024
 @author: Leo Nofs
 
 
-This spectra was collected by Tommy Gonda, Matt Kriete, and David Ennis using the magnetic fields
+This spectra was collected by Tomas Gonda, Matt Kriete, and David Ennis using the magnetic fields
 of the Magnetized Dusty Plasma Experiment (MDPX) at Auburn University, in Auburn, AL
 
 The Argon spectra was collected after reflection off a beam-splitting plate. This plate has a 
@@ -47,7 +47,7 @@ doHeNonPol3 =  1# Single B - show non-dipole required to match
 
 # savepdf = 0
 
-savepdf = 1
+savepdf =1
 savepng = 0
 savedpi = 144
 fanplot = 0 #Ground State Fan
@@ -98,8 +98,8 @@ if doHePol2 == True:
                           'plot_window': [447.1, 447.2],  # Min and max for plot window range (nm), convolutions will only take place within this range
                           'amu': 2,  # Weight in AMU
                           'specres': 10,  # How many steps per resolution are calculated. Higher makes a smoother curve.
-                            'TAlpha' : np.sqrt(1-0.35) ,
-                            'TBeta' : np.sqrt(1-0.65) ,
+                            'TAlpha' : 0.65, #Beam Splitter Film Correction
+                            'TBeta' : 0.35, #Beam Splitter Film Coating Correction
                           }
 
         HePol = AtomSpect_Main(InputdeckHePol)
@@ -178,8 +178,8 @@ if doHePol == True:
                           'amu': 2,  # Weight in AMU
                           'specres':3,  # How many steps per resolution are calculated. Higher makes a smoother curve.
                           # 'sortE' : True
-                             'TAlpha' : np.sqrt(1-0.35) ,
-                             'TBeta' : np.sqrt(1-0.65) ,
+                            'TAlpha' : 0.65, #Beam Splitter Film Correction
+                            'TBeta' : 0.35, #Beam Splitter Film Coating Correction
 
                           }
 
@@ -247,7 +247,11 @@ if doHePol3 == True:
                           'specres':3,  # How many steps per resolution are calculated. Higher makes a smoother curve.
                           # 'sortE' : True
                           'SpectrumData': [He_PolShift, He_Pol_Spec['signals'][i]],  # Spectrometer Data.
-
+            
+                            # 'TAlpha' : 0.65, #Beam Splitter Film Correction
+                            # 'TBeta' : 0.35, #Beam Splitter Film Coating Correction
+                       
+        
 
                           }
 
@@ -280,8 +284,8 @@ if doHePol3 == True:
                              'sortE': True ,
                              # 'Pol_angle': 0,  # Angle polarizing filter makes with max linear transmission, Optional
             
-                            'TAlpha' : np.sqrt(0.65) , #Beam Splitter Film Correction
-                            'TBeta' : np.sqrt(0.35), #Beam Splitter Film Coating Correction
+                            'TAlpha' : 0.65, #Beam Splitter Film Correction
+                            'TBeta' : 0.35, #Beam Splitter Film Coating Correction
                              }
         
         HePol3b = AtomSpect_Main(InputdeckHeNonPol3b)
@@ -358,8 +362,8 @@ if doHeNonPol == True:
                              # 'EtermG': 169086.9076, #Term energy of lower state in cm^-1
                              'EtermE' : 191444.47832914, #Term energy of upper state in cm^-1
                              # 'EtermE' : 191444.4827, #Term energy of upper state in cm^-1
-                             'TAlpha' : np.sqrt(1-0.35) ,
-                             'TBeta' : np.sqrt(1-0.65) ,
+                            'TAlpha' : 0.65, #Beam Splitter Film Correction
+                            'TBeta' : 0.35, #Beam Splitter Film Coating Correction
 
                              }
         HeNonPol = AtomSpect_Main(InputdeckHeNonPol)
@@ -461,8 +465,8 @@ if doHeNonPol2 == True:
                              'sortE': True ,
                              # 'Pol_angle': 0,  # Angle polarizing filter makes with max linear transmission, Optional
             
-                            'TAlpha' : np.sqrt(0.65) , #Beam Splitter Film Correction
-                            'TBeta' : np.sqrt(0.35), #Beam Splitter Film Coating Correction
+                            'TAlpha' : 0.65, #Beam Splitter Film Correction
+                            'TBeta' : 0.35, #Beam Splitter Film Coating Correction
                              }
         
         HeNonPol2b = AtomSpect_Main(InputdeckHeNonPol2b)
@@ -470,7 +474,7 @@ if doHeNonPol2 == True:
         
         colorlist = ['royalblue', 'g', 'r', 'brown', 'm', 'c', 'y', 'black', 'seagreen']
         HeNonPol_PlotVar= ['royalblue', 2.5, 'solid', 'Int - Expected','s']
-        HeNonPol_PlotVar2= ['red', 2.5, 'solid', 'Int -Corrected Pol']
+        HeNonPol_PlotVar2= ['red', 2.5, 'solid', 'Int - Corrected Pol']
 
 
         if i == 0:  # In the future, automate this process of the plotting.
@@ -524,8 +528,8 @@ if doHeNonPol3 == True:
                       'amu': 2,  # Weight in AMU
                       'SpectrumData': [He_NonPol_Spec['wavelength'], He_NonPol_Spec['signals'][0]],  # Spectrometer Data.
                       'spec_window': [447, 447.2],  # Min and max for convolutions
-                        'TAlpha' : np.sqrt(1-0.35) ,
-                        'TBeta' : np.sqrt(1-0.65) ,
+                            'TAlpha' : 0.65, #Beam Splitter Film Correction
+                            'TBeta' : 0.35, #Beam Splitter Film Coating Correction
                       # 'DoLowSig': 'Y',  # If this exists in the input, lowfield signal strength will be calculated.
                       # 'DoHighSig': 'Y',  # If this exists in the input, highfield signal strength will be calculated.
 

@@ -14,8 +14,8 @@ wavelength AND polarization mode dependent reflectivity coefficient. This modifi
 intensity ratio between linear (pi) and circular (sigma) components of the spectra.
 
 For these Argon lines, the plate data sheet sees approximate values of (for 750 nm light)
-TAlpha = np.sqrt(0.8) - For the pi component
-TBeta = np.sqrt(0.2) - For the sigma component
+TAlpha = 0.675 - For the pi component
+TBeta = 0.325 - For the sigma component
 
 
 """
@@ -77,8 +77,8 @@ if doAllB:
                       'SpectrumData': [shiftedAr, Ar_Spec['signals'][i]] , 
                       # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
-                      'TAlpha' : np.sqrt(1-0.2) ,
-                      'TBeta' : np.sqrt(1-0.8) ,
+                        'TAlpha' : 0.675, #Beam Splitter Film Correction
+                        'TBeta' : 0.325, #Beam Splitter Film Coating Correction
                        }
         
     
@@ -128,8 +128,8 @@ if doAllB2:
                       'SpectrumData': [shiftedAr, Ar_Spec['signals'][i]] , 
                       'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
-                      'TAlpha' : np.sqrt(1-0.2) ,
-                      'TBeta' : np.sqrt(1-0.8) , 
+                        'TAlpha' : 0.675, #Beam Splitter Film Correction
+                        'TBeta' : 0.325, #Beam Splitter Film Coating Correction
                       }
         
     
@@ -160,6 +160,9 @@ if doAllB2:
                       'specres': 10,  # How many steps per resolution are calculated. Higher makes a smoother curve.
                       'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
+                      
+                        'TAlpha' : 0.675, #Beam Splitter Film Correction
+                        'TBeta' : 0.325, #Beam Splitter Film Coating Correction
                        }
        
     
@@ -241,8 +244,8 @@ if doComboPlot:
 
                       # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
-                        'TAlpha' : np.sqrt(1-0.2) ,
-                        'TBeta' : np.sqrt(1-0.8) ,
+                        'TAlpha' : 0.675, #Beam Splitter Film Correction
+                        'TBeta' : 0.325, #Beam Splitter Film Coating Correction
                        }
     
         #This is delta of 13303.6742 cm-1
@@ -268,8 +271,8 @@ if doComboPlot:
                       'specres': 10,  # How many steps per resolution are calculated. Higher makes a smoother curve.
                       # 'DoHighSig' : 'Y' , #If this exists in the input, lowfield signal strength will be calculated. 
                       # 'DoLowSig' : 'Y' , #If this exists in the input, highfield signal strength will be calculated. 
-                        'TAlpha' : np.sqrt(1-0.2) ,
-                        'TBeta' : np.sqrt(1-0.8) ,
+                        'TAlpha' : 0.675, #Beam Splitter Film Correction
+                        'TBeta' : 0.325, #Beam Splitter Film Coating Correction
                        }
                
         Ar1 = AtomSpect_Main(InputdeckAr1)    

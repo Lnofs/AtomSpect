@@ -1198,8 +1198,8 @@ def polarization(mupper, mlower, Btheta, gamma=0, Pol_Filter=False, TAlpha=1, TB
     else:
 
         gammaangle = np.deg2rad(gamma)
-        ealph = TAlpha*(pol1*np.cos(gammaangle) + pol2*np.sin(gammaangle))
-        ebeta = TBeta*(pol1*np.sin(gammaangle) + pol2*np.cos(gammaangle))
+        ealph = np.sqrt(TAlpha)*(pol1*np.cos(gammaangle) + pol2*np.sin(gammaangle))
+        ebeta = np.sqrt(TBeta)*(pol1*np.sin(gammaangle) + pol2*np.cos(gammaangle))
         
     theta_rad = np.deg2rad(Btheta)  # convert deg to radians
     # print(ealph,ebeta)
