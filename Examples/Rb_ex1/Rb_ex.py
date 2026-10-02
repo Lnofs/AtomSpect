@@ -36,7 +36,7 @@ InputRb = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J , 
                       'plottitle': f'Rb Testing', #Title for plotting (optional)     
                       'fxnwindow': .5 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                       # 'Pol_angle': Polangle ,#Angle polarizing filter makes with max linear transmission, Optional
-                      'HFS_G' : [1011.910813e9] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
+                      'HFS_G' : [1011.910813e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                       'HFS_E': [120.527e6, 25e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                       'HFSB_E': [0,25.88e6] ,
                       # 'PsiHFS': True, 
@@ -64,7 +64,7 @@ InputRb_noHFS = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1)
                       'plottitle': f'Rb Testing', #Title for plotting (optional)     
                       'fxnwindow': .5 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                       # 'Pol_angle': Polangle ,#Angle polarizing filter makes with max linear transmission, Optional
-                      # 'HFS_G' : [1011.910813e9] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
+                      # 'HFS_G' : [1011.910813e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                       # 'HFS_E': [120.527e6, 25e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                       # 'HFSB_E': [0,25.88e6] ,
 
@@ -91,7 +91,7 @@ InputRb2 = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1)L_J ,
                       'plottitle': f'Rb Testing', #Title for plotting (optional)     
                       'fxnwindow': .05 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                       # 'Pol_angle': Polangle ,#Angle polarizing filter makes with max linear transmission, Optional
-                      'HFS_G' : [1011.910813e9] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
+                      'HFS_G' : [1011.910813e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                       'HFS_E': [120.527e6, 25e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                       'HFSB_E': [0,25.88e6] ,
 
@@ -117,7 +117,7 @@ InputRb_noHFS2 = {'s_ground': .5 ,#Spin multiplicity,s, for ground state ^(2s +1
                       'plottitle': f'Rb Testing', #Title for plotting (optional)     
                       'fxnwindow': .05 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                       # 'Pol_angle': Polangle ,#Angle polarizing filter makes with max linear transmission, Optional
-                      # 'HFS_G' : [1011.910813e9] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
+                      # 'HFS_G' : [1011.910813e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                       # 'HFS_E': [120.527e6, 25e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                       # 'HFSB_E': [0,25.88e6] ,
 
@@ -237,7 +237,7 @@ if doRbSlider:
                           'plottitle': f'Rb Testing With HFS', #Title for plotting (optional)     
                           'fxnwindow': .05 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                           # 'Pol_angle': 90 ,#Angle polarizing filter makes with max linear transmission, Optional
-                          'HFS_G' : [1011.910813e9] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
+                          'HFS_G' : [1011.910813e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                           'HFS_E': [120.527e6, 25e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                           'HFSB_E': [0,25.88e6] ,
 
@@ -263,7 +263,7 @@ if doRbSlider:
                           'plottitle': f'Rb Testing - No HFS', #Title for plotting (optional)     
                           'fxnwindow': .05 , #How far from the central peak the convolution will be calculated. Also related to how stick binning works. 
                           'Pol_angle': 90 ,#Angle polarizing filter makes with max linear transmission, Optional
-                          # 'HFS_G' : [1011.910813e9] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
+                          # 'HFS_G' : [1011.910813e6] , #OPtional: Hyperfine A constant for the lower level, need one entry per J level, lowest J first [Hz]
                           # 'HFS_E': [120.527e6, 25e6], #Optional: Hyperfine A constants for upper level, need one entery per J level, lowest J first [Hz]
                           # 'HFSB_E': [0,25.88e6] ,
 

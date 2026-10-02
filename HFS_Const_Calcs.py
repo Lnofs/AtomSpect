@@ -81,7 +81,7 @@ def Hz_to_nm(Ediff):
 
 
 
-def ev_to_Hz(Ediff):
+def ev_to_MHz(Ediff):
     #Converts from eV to MHz
     return (1e-6)*Ediff*2.41804e14
     
@@ -116,7 +116,7 @@ def Ahfs_Kopf(Z,n,ndefect,muI,I,l_in,j, Za=1):
         tempval = hcRyd*alpha**2 * Z* Za**2 * thisgI / (j*(j+1)*(l_in + 0.5)*((n - ndefect)**3))
             # tempval = 13.605693122990 *alpha**2 * Z* Za**2 * thisgI / ((j*j)*(l_in)*((n - ndefect)**3))
 
-    return ev_to_Hz(tempval)
+    return ev_to_MHz(tempval)
 
 def A_ratio(A2,mu1,I1,mu2,I2):
     #Using the accuracy of the isotope ratio for nuclear moments to calculate the HFS constant if one is known.
@@ -253,7 +253,7 @@ def Ahfs_Kopf2(Z,deltaFS,muI,I,l_in,j):
         return 0
     else:
         tempval = deltaFS*l_in*(l_in+1)*thisgI/((l_in+0.5)*j*(j+1)*Z)
-    return ev_to_Hz(tempval)
+    return ev_to_MHz(tempval)
 
 def gI_kopf(I,L,S,muI,Mass):
     #Not sure what this is, doesn't seem to be gI actually?
@@ -465,9 +465,9 @@ def Ahfs_Calc(Input,verbose = False,detailed=False):
       
         tempA = corrfactor*correctedE(Input['AMU']) *alpha**2 * Zi* Za**2 * thisgI / (j1*(j1+1)*(l1 + 0.5)*((n - ndefect)**3))
         if detailed:
-            return [ev_to_Hz(tempA),corrfactor]
+            return [ev_to_MHz(tempA),corrfactor]
         else:
-            return ev_to_Hz(tempA)
+            return ev_to_MHz(tempA)
 
 def Ahfs(Input,verbose = False, Input2 = {}):
     tempA = Ahfs_Calc(Input,verbose=verbose)
