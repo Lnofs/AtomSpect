@@ -481,7 +481,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
                  fig_size=(10, 8), plotpol=True, plotlabel='', plotnondip=False, dotwin=False,  
                  marker=None, marker_count=None, marker_size = None, fontsize=None, ScaleSpectrometer=None,  
                  SpectrometerLabel='Spectrometer', SpectrometerMarker=None, SpectrometerColor='black', 
-                 SpectrometerLS='solid', legcols=None): 
+                 SpectrometerLS='solid', legcols=None, show=True):
          
     '''
     Author note: This function was refactored by Gemini AI from a previous iteration. The changes add a pre-processing step
@@ -521,6 +521,9 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
     makefig : BOOL, optional
         Whether a figure object should be created. Need Shape unless 1x1 plot is desired. The default is True.
         Set to FALSE 
+    show : BOOL, optional
+        Display a new figure immediately. Default True. Set False when adding
+        overlays or saving the completed figure before displaying it.
     fig_size : tuple (Width, Height)
         Plot size in inches for the resulting figure. The default is (10, 8).
     plotpol : BOOL, optional
@@ -528,8 +531,8 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
     plotlabel : STR, optional
         Label for the plot. The default is ''.
     plotnondip : BOOL, optional
-        Whether non-dipole transitions should be plotted as well (purple star stem plots)
-        Despite only being a dipole based code, non-dipole components appear in the He results. The default is False.
+        Whether other_sticks should be plotted as purple stars. Default False.
+        This is a legacy option name, not evidence for non-dipole emission.
     dotwin : BOOL, optional
         Whether a twin axis is plotted with a separate scale for the sticks than the main plot. The default is False.
     marker : INT, optional
@@ -667,7 +670,7 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
          
         if plotnondip and 'other_sticks' in main_dict: 
             m, _, _ = stem_ax.stem(main_dict['other_sticks'][0], main_dict['other_sticks'][1],  
-                                   linefmt='C4', markerfmt='*', basefmt=" ", label=r'$\Delta m >1$') 
+                                   linefmt='C4', markerfmt='*', basefmt=" ", label='other components')
             plt.setp(m, markersize=10, markerfacecolor='none') 
 
     # --- 7. Legend and Final Layout --- 
@@ -675,7 +678,8 @@ def PlotFunction(Plotobject, plot_vars, plottitle='', plotwind=None, SpectrumPlo
      
     if makefig: 
         plt.subplots_adjust(hspace=0, wspace=0) 
-        plt.show() 
+        if show:
+            plt.show()
 
     return taxs
 
@@ -743,7 +747,7 @@ def MakeSlider(Inputdict, Spectra, plotwind=None, do_sticks=True, do_Polplot=Tru
                , polvary=False, do_other = False, Tmax = 30, Bmax = 5):
     '''
     Generate the plot with changeable sliders that allow for real-time interaction with the spectral results.
-    All flags should be self-evident, with do_other referring to non-dipole transitions being shown.
+    do_other shows other_sticks; its legacy name does not imply non-dipole emission.
     
     
     
@@ -1396,38 +1400,114 @@ def stateprocess(L_state, S_state, E_level, thisB, sortE=False):
                 w3mat[i, j] = CG1
         return [w3mat, E_cm0_Mat, LowE, E_cm0_flat, bigstatelist]
 
+def _magnetic_eigenvectors(level, zeeman):
+    """Return definite-M eigenvectors matched to the energy ranks of zeeman[0].
+
+    The axial Hamiltonian does not couple different M, so it is rebuilt from
+    the eigensystem and diagonalized separately within each M block. This
+    avoids tolerance-based resolution of mixed-M vectors near level crossings.
+    Equal-energy columns are assigned a reconstructed basis; their original
+    individual identities are not preserved. The supplied arrays are unchanged.
+    """
+    vectors = np.asarray(zeeman[1])
+    energies = np.asarray(zeeman[0])
+    magnetic_m = np.asarray([state[1] for state in level[-1]])
+    hamiltonian = (vectors*energies) @ vectors.conj().T
+    block_energies, block_vectors = [], []
+    for m in np.unique(magnetic_m):
+        idx = np.flatnonzero(magnetic_m == m)
+        w, u = np.linalg.eigh(hamiltonian[np.ix_(idx, idx)])
+        full = np.zeros((len(magnetic_m), len(idx)), dtype=u.dtype)
+        full[idx, :] = u
+        block_energies.append(w)
+        block_vectors.append(full)
+    block_energies = np.concatenate(block_energies)
+    block_vectors = np.concatenate(block_vectors, axis=1)
+    # Assign the k-th lowest block eigenvector to the column holding the k-th
+    # lowest energy, so the result follows the column order of zeeman[0].
+    resolved = np.empty_like(block_vectors)
+    resolved[:, np.argsort(energies, kind='stable')] = block_vectors[:, np.argsort(block_energies, kind='stable')]
+    return resolved
+
+
+def _eigenpair_polarization(afcf, basis_q, dipoles, lower_m, upper_m,
+                          Bangle, gamma, Filter, T_Alpha, T_Beta):
+    """Classify definite-M eigenpairs and check their spherical E1 amplitudes.
+
+    q is M_upper - M_lower, matching polarization(). The public sigma-stick
+    keys retain their existing emitted-light sign convention. Label 3 denotes
+    a pair with no E1 amplitude, never a non-dipole emission component.
+    """
+    q_values = np.array([-1, 0, 1])
+    spherical = np.asarray(dipoles)[:, None]*(np.asarray(basis_q)[:, None] == q_values)
+    amplitudes = afcf.T @ spherical
+    strengths = np.abs(amplitudes)**2
+    delta_m = (upper_m[:, None] - lower_m[None, :]).ravel()
+    q_labels = np.rint(delta_m).astype(int)
+    if not np.allclose(delta_m, q_labels, rtol=0, atol=1e-8):
+        raise ValueError("Polarization labels require integer differences in eigenstate M.")
+    # The eigenvectors have definite M, so only the channel matching Delta M
+    # can contribute. This guards the classification against basis errors.
+    leakage = np.where(q_labels[:, None] == q_values, 0, strengths)
+    if np.max(leakage) > 1e-12*np.max(strengths):
+        raise ValueError("Spherical E1 amplitudes disagree with eigenstate M.")
+    return [polarization(int(q), 0, Bangle, gamma, Pol_Filter=Filter,
+                         TAlpha=T_Alpha, TBeta=T_Beta) for q in q_labels]
+
+
 def Zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False, T_Alpha = 1, T_Beta = 1):
+    """Return relative E1 strengths and eigenpair-indexed polarization labels.
+
+    The returned basis-pair list and Signalcoeffa remain basis-indexed; rad,
+    wavelengths and strengths refer to columns of the transformed operator.
+    Degenerate input columns may be replaced by a definite-M basis, so their
+    original individual transition identities are not preserved.
+    """
+    return _zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle, gamma, Filter, T_Alpha, T_Beta)
+
+
+def _zeeman_signal(LevelG, LZG, LevelE, LZE, Bangle=90, gamma=0, Filter=False,
+                   T_Alpha=1, T_Beta=1, label_eigenpairs=True):
     # print(T_Alpha,T_Beta)
     # Need to make a list of all possible combinations such that each upper state is repeated by the dim of the lower level, and a second list where the opposite is true.
     # ie, each lower level is repeated by the count of upper level states. This makes two lower x upper length arrays that will be useful for wigner calcs.
     bjlist = [[x, y] for y in LevelE[-1] for x in LevelG[-1]]  # This list will be [[bigstatesG], [bigstatesE]]
 
     # need to define the polarization effect from the filter.
-    rad = []
+    basis_rad = []
     for i in range(len(bjlist)):
 
 
-        rad.append(polarization(bjlist[i][1][1], bjlist[i][0][1], Bangle, gamma, Pol_Filter=Filter, TAlpha = T_Alpha, TBeta = T_Beta))
+        basis_rad.append(polarization(bjlist[i][1][1], bjlist[i][0][1], Bangle, gamma, Pol_Filter=Filter, TAlpha = T_Alpha, TBeta = T_Beta))
 
     # Calculate the signal strength coefficients as the product of radiation polarization term and dipole strength.
     # This is essentially a row vector.
     Signalcoeff = []
+    dipoles = []
     for i in range(len(bjlist)):
-        if rad[i][1] == 3:
+        if basis_rad[i][1] == 3:
+            dipoles.append(0)
             Signalcoeff.append(0)
         else:
-            Signalcoeff.append(rad[i][0]*dipolestr(bjlist[i][1], bjlist[i][0]))
+            dipoles.append(dipolestr(bjlist[i][1], bjlist[i][0]))
+            Signalcoeff.append(basis_rad[i][0]*dipoles[-1])
     Signalcoeffa = np.array(Signalcoeff)
 
-    afcf = np.kron(np.array(LZE[1]), np.array(LZG[1]))  # This uses the tensor product after the magnetic field is taken into account.
+    if label_eigenpairs:
+        vectors_e = _magnetic_eigenvectors(LevelE, LZE)
+        vectors_g = _magnetic_eigenvectors(LevelG, LZG)
+        upper_m = np.asarray([state[1] for state in LevelE[-1]]) @ np.abs(vectors_e)**2
+        lower_m = np.asarray([state[1] for state in LevelG[-1]]) @ np.abs(vectors_g)**2
+        afcf = np.kron(vectors_e, vectors_g)
+        rad = _eigenpair_polarization(afcf, [item[1] for item in basis_rad], dipoles,
+                                    lower_m, upper_m, Bangle, gamma, Filter, T_Alpha, T_Beta)
+    else:
+        # Approximation spectra consume only strengths and wavelengths; their
+        # eigenvectors do not necessarily use the coupled M basis above.
+        afcf = np.kron(np.asarray(LZE[1]), np.asarray(LZG[1]))
+        rad = basis_rad
 
     signal_out = []
-    # for i in range(len(bjlist)): #This removes any components who would have delta mj greater than 1, though it makes the spectra match worse....
-    #     if rad[i][1] ==3:
-    #         signal_out.append(0)
-    #     else:
-    #         signal_out.append((np.sum(afcf[:,i]*Signalcoeffa)**2))
-
     for i in range(len(bjlist)):
         signal_out.append((np.sum(afcf[:, i]*Signalcoeffa)**2))
     tsigout = np.array(signal_out)
@@ -2499,7 +2579,7 @@ def AtomSpect_Main(Inputdeck):
                 Excited_Level = stateprocess(L_excited, S_excited, E_excited, Bfield_ext, sortE=sortE)
                 Ground_Zeeman_High = Zeeman_func(Ground_Level, Bfield_ext, Highfield=True, Eterm=EtermG)
                 Excited_Zeeman_High = Zeeman_func(Excited_Level, Bfield_ext, Highfield=True,Eterm=EtermE)
-                Z_sig_High = Zeeman_signal(Ground_Level, Ground_Zeeman_High, Excited_Level, Excited_Zeeman_High, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter,T_Alpha = Talpha, T_Beta = Tbeta)
+                Z_sig_High = _zeeman_signal(Ground_Level, Ground_Zeeman_High, Excited_Level, Excited_Zeeman_High, Bangle=Bext_angle, gamma=Polangle, Filter=Polfilter,T_Alpha = Talpha, T_Beta = Tbeta, label_eigenpairs=False)
                 # Z_sig_Low = Zeemansig_Low(Ground_Level,Excited_Level,Bangle=Bext_angle,gamma=Polangle, Filter=Polfilter)
 
                 data['signal_high'] = Z_sig_High[0]

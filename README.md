@@ -31,11 +31,13 @@ The versatility of the plotting function is showcased across several of the incl
 An input dictionary can be fed into MakeSlider. Boolean flags exist for:
 do_sticks - Plotting component "stick" lines. Default True
 do_Polplot - Labels the polarization of each component stick. Default True
-do_other - whether components with delta M > 1 are plotted (purple star sticks). Default False
+do_other - whether other_sticks are plotted (purple star sticks). Default False. This legacy option does not imply non-dipole emission.
 banglevary - Whether angle of magnetic field is allowed to vary
 polvary - Whether a polarization filter is along the line of sight and if the filter angle can vary.
 Tmax - Maximum temperature [eV]. Default 30
 Bmax - Maxium field strength [T]. Default 5
+
+For the non-hyperfine axial Zeeman calculation, polarization labels follow the energy eigenstate pairs, using Delta M = M_upper - M_lower. Active E1 components have Delta M = 0 or +/-1. Earlier versions attached labels using basis-pair order, which could place allowed He I components in other_sticks. The emitted-light convention in the existing sigmaplus_sticks and sigmaminus_sticks keys is retained. Hyperfine polarization labeling requires a separate correction.
 
 The Slider always lets: Bfield strength (in T), Temperature (eV), and Wi (~Spectrometer pixel resolution in nm) vary.
 If you double click on the numerical value under the slider, you can enter a value directly to be calculated. The value entered here CAN be outside the normal slider ranges!
